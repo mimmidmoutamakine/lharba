@@ -69,33 +69,79 @@ window.showExamSubmitDialog = function showExamSubmitDialog() {
     });
 };
 
-window.trainingFilterBar = function trainingFilterBar(config) {
+window.trainingFilterBar = function ({ values, options }) {
     return {
+        values: { ...values },
+        options,
         openKey: null,
-        values: {
-            section: config.values?.section ?? '',
-            difficulty: config.values?.difficulty ?? '',
-            status: config.values?.status ?? '',
-            sort: config.values?.sort ?? 'title',
-        },
-        options: config.options ?? {},
+        loading: false,
+
         toggle(key) {
             this.openKey = this.openKey === key ? null : key;
         },
+
         isOpen(key) {
             return this.openKey === key;
         },
+
         closeAll() {
             this.openKey = null;
         },
-        select(key, value) {
+
+        closeIfSame(key) {
+            if (this.openKey === key) {
+                this.openKey = null;
+            }
+        },
+
+        selectedLabel(key) {
+            const current = this.values[key] ?? '';
+            const found = (this.options[key] || []).find(
+                (option) => option.value === current
+            );
+
+            return found ? found.label : '';
+        },
+
+        async selectAndSubmit(key, value) {
             this.values[key] = value;
             this.closeAll();
+            await this.refreshList();
         },
-        selectedLabel(key) {
-            const list = this.options[key] ?? [];
-            const selected = list.find((option) => option.value === this.values[key]);
-            return selected?.label ?? list[0]?.label ?? '';
+
+        async refreshList() {
+            this.loading = true;
+
+            const params = new URLSearchParams({
+                section: this.values.section ?? '',
+                difficulty: this.values.difficulty ?? '',
+                status: this.values.status ?? '',
+                sort: this.values.sort ?? '',
+            });
+
+            const url = `${window.location.pathname}?${params.toString()}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                const container = document.getElementById('training-cards-container');
+                if (container && data.html) {
+                    container.innerHTML = data.html;
+                }
+
+                window.history.replaceState({}, '', url);
+            } catch (error) {
+                console.error('Filter refresh failed:', error);
+            } finally {
+                this.loading = false;
+            }
         },
     };
 };

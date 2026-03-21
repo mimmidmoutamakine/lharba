@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
 
 class LearningHubController extends Controller
 {
@@ -80,7 +81,7 @@ class LearningHubController extends Controller
         ]);
     }
 
-    public function training(Request $request): View
+    public function training(Request $request): View|JsonResponse
     {
         $sectionFilter = (string) $request->string('section');
         $statusFilter = (string) $request->string('status');
@@ -117,6 +118,7 @@ class LearningHubController extends Controller
         if ($statusFilter !== '') {
             $rows = $rows->filter(fn (array $row): bool => strcasecmp($row['status'], $statusFilter) === 0)->values();
         }
+
         if ($difficultyFilter !== '') {
             $rows = $rows->filter(fn (array $row): bool => strcasecmp($row['difficulty'], $difficultyFilter) === 0)->values();
         }
@@ -127,6 +129,14 @@ class LearningHubController extends Controller
             'best_score' => $rows->sortByDesc(fn (array $row) => $row['best_score'] ?? -1)->values(),
             default => $rows->sortBy(fn (array $row) => strtolower($row['item']->title))->values(),
         };
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('student.hub.partials.training-cards', [
+                    'rows' => $rows,
+                ])->render(),
+            ]);
+        }
 
         return view('student.hub.training', [
             'sectionChoices' => self::SECTION_CHOICES,
@@ -139,7 +149,6 @@ class LearningHubController extends Controller
             ],
         ]);
     }
-
     public function builder(): View
     {
         $models = PartBankItem::query()

@@ -105,6 +105,7 @@
                         ]
                     }
                 })"
+                x-ref="filterForm"
                 @keydown.escape.window="closeAll()"
             >
                 <input type="hidden" name="section" :value="values.section">
@@ -113,7 +114,7 @@
                 <input type="hidden" name="sort" :value="values.sort">
 
                 <div class="hub-filter-popover" x-data="{ key: 'section' }">
-                    <button type="button" class="hub-filter-trigger" @click="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
+                    <button type="button" class="hub-filter-trigger" @click.stop="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
                         <span class="hub-filter-trigger-label" x-text="selectedLabel(key)"></span>
                         <span class="hub-filter-trigger-icon" :class="{ 'hub-filter-trigger-icon-open': isOpen(key) }" aria-hidden="true">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -121,9 +122,9 @@
                             </svg>
                         </span>
                     </button>
-                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeAll()">
+                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeIfSame(key)">
                         <template x-for="option in options[key]" :key="`${key}-${option.value || 'all'}`">
-                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click="select(key, option.value)">
+                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click.stop="selectAndSubmit(key, option.value)">
                                 <span x-text="option.label"></span>
                                 <svg x-show="values[key] === option.value" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                                     <path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -134,7 +135,7 @@
                 </div>
 
                 <div class="hub-filter-popover" x-data="{ key: 'difficulty' }">
-                    <button type="button" class="hub-filter-trigger" @click="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
+                    <button type="button" class="hub-filter-trigger" @click.stop="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
                         <span class="hub-filter-trigger-label" x-text="selectedLabel(key)"></span>
                         <span class="hub-filter-trigger-icon" :class="{ 'hub-filter-trigger-icon-open': isOpen(key) }" aria-hidden="true">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -142,9 +143,9 @@
                             </svg>
                         </span>
                     </button>
-                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeAll()">
+                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeIfSame(key)">
                         <template x-for="option in options[key]" :key="`${key}-${option.value || 'all'}`">
-                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click="select(key, option.value)">
+                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click.stop="selectAndSubmit(key, option.value)">
                                 <span x-text="option.label"></span>
                                 <svg x-show="values[key] === option.value" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                                     <path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -155,7 +156,7 @@
                 </div>
 
                 <div class="hub-filter-popover" x-data="{ key: 'status' }">
-                    <button type="button" class="hub-filter-trigger" @click="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
+                    <button type="button" class="hub-filter-trigger" @click.stop="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
                         <span class="hub-filter-trigger-label" x-text="selectedLabel(key)"></span>
                         <span class="hub-filter-trigger-icon" :class="{ 'hub-filter-trigger-icon-open': isOpen(key) }" aria-hidden="true">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -163,9 +164,9 @@
                             </svg>
                         </span>
                     </button>
-                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeAll()">
+                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeIfSame(key)">
                         <template x-for="option in options[key]" :key="`${key}-${option.value || 'all'}`">
-                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click="select(key, option.value)">
+                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click.stop="selectAndSubmit(key, option.value)">
                                 <span x-text="option.label"></span>
                                 <svg x-show="values[key] === option.value" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                                     <path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -176,7 +177,7 @@
                 </div>
 
                 <div class="hub-filter-popover" x-data="{ key: 'sort' }">
-                    <button type="button" class="hub-filter-trigger" @click="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
+                    <button type="button" class="hub-filter-trigger" @click.stop="toggle(key)" :class="{ 'hub-filter-trigger-active': isOpen(key) }">
                         <span class="hub-filter-trigger-label" x-text="selectedLabel(key)"></span>
                         <span class="hub-filter-trigger-icon" :class="{ 'hub-filter-trigger-icon-open': isOpen(key) }" aria-hidden="true">
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -184,9 +185,9 @@
                             </svg>
                         </span>
                     </button>
-                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeAll()">
+                    <div class="hub-filter-panel" x-show="isOpen(key)" x-cloak x-transition.origin.top.right.duration.180ms @click.outside="closeIfSame(key)">
                         <template x-for="option in options[key]" :key="`${key}-${option.value || 'all'}`">
-                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click="select(key, option.value)">
+                            <button type="button" class="hub-filter-option" :class="{ 'hub-filter-option-active': values[key] === option.value }" @click.stop="selectAndSubmit(key, option.value)">
                                 <span x-text="option.label"></span>
                                 <svg x-show="values[key] === option.value" class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                                     <path d="m5 12 4.2 4.2L19 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -196,81 +197,14 @@
                     </div>
                 </div>
 
-                <button class="hub-glow-button hub-glow-button-primary training-filter-submit px-4 py-3 text-sm font-semibold xl:self-stretch">تطبيق</button>
+                {{-- <button class="hub-glow-button hub-glow-button-primary training-filter-submit px-4 py-3 text-sm font-semibold xl:self-stretch">تطبيق</button> --}}
             </form>
 
-            <div class="mt-6 overflow-x-auto hub-grid-table training-models-table-wrap">
-                <table class="training-models-table min-w-full divide-y divide-slate-200 text-sm">
-                    <thead>
-                        <tr>
-                            <th class="px-4 py-3 text-right">القسم</th>
-                            <th class="px-4 py-3 text-right">النموذج</th>
-                            <th class="px-4 py-3 text-right">الصعوبة</th>
-                            <th class="px-4 py-3 text-right">المحاولات</th>
-                            <th class="px-4 py-3 text-right">أفضل نتيجة</th>
-                            <th class="px-4 py-3 text-right">الحالة</th>
-                            <th class="px-4 py-3 text-right">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
-                        @forelse($rows as $row)
-                            <tr>
-                                <td class="px-4 py-3" data-label="القسم">
-                                    <span class="hub-chip hub-chip-blue">
-                                        {{ $row['item']->section_type === 'lesen' ? 'القراءة' : ($row['item']->section_type === 'sprachbausteine' ? 'اللغة' : ($row['item']->section_type === 'hoeren' ? 'الاستماع' : 'الكتابة')) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 font-semibold text-slate-900" data-label="النموذج">{{ $row['item']->title }}</td>
-                                <td class="px-4 py-3" data-label="الصعوبة">{{ $row['difficulty'] === 'Unknown' ? 'غير معروف' : ($row['difficulty'] === 'Easy' ? 'سهل' : ($row['difficulty'] === 'Medium' ? 'متوسط' : 'صعب')) }}</td>
-                                <td class="px-4 py-3" data-label="المحاولات">{{ $row['attempts'] }}</td>
-                                <td class="px-4 py-3" data-label="أفضل نتيجة">{{ is_null($row['best_score']) ? '-' : $row['best_score'].'%' }}</td>
-                                <td class="px-4 py-3" data-label="الحالة">
-                                    <span class="hub-chip {{ $row['status'] === 'Mastered' ? 'hub-chip-emerald' : ($row['status'] === 'Practiced' ? 'hub-chip-amber' : 'hub-chip-rose') }}">
-                                        {{ $row['status'] === 'Mastered' ? 'متقن' : ($row['status'] === 'Practiced' ? 'تمت ممارسته' : 'لم يبدأ') }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3" data-label="إجراءات">
-                                    <div class="hub-inline-actions">
-                                        <form method="POST" action="{{ route('training.models.start', $row['item']) }}">
-                                            @csrf
-                                            <button title="ابدأ" class="hub-outline-action" type="submit" aria-label="ابدأ">
-                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M8 6.5v11l8.5-5.5L8 6.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                                </svg>
-                                            </button>
-                                        </form>
-                                        @if ($row['item']->part_type === \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS)
-                                            <a title="طباعة" href="{{ route('training.models.print', $row['item']) }}" target="_blank" class="hub-outline-action" aria-label="طباعة">
-                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                    <path d="M7 8V5.5A1.5 1.5 0 0 1 8.5 4h7A1.5 1.5 0 0 1 17 5.5V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    <rect x="5" y="14" width="14" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-                                                    <rect x="4" y="8" width="16" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/>
-                                                    <path d="M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                                </svg>
-                                            </a>
-                                        @endif
-                                        <a title="جدولة" href="{{ route('training.builder') }}" class="hub-outline-action" aria-label="جدولة">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
-                                                <path d="M12 8v4l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                            </svg>
-                                        </a>
-                                        <a title="مفضلة" href="{{ route('training.builder') }}" class="hub-outline-action" aria-label="مفضلة">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                                <path d="m12 4 2.35 4.76 5.25.76-3.8 3.7.9 5.23L12 16l-4.7 2.45.9-5.23-3.8-3.7 5.25-.76L12 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-6 text-slate-500">لا توجد نتائج مطابقة.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+
+            <div id="training-cards-container" :class="{ 'opacity-60 pointer-events-none': loading }">
+                @include('student.hub.partials.training-cards', ['rows' => $rows])
             </div>
+
         </section>
     </div>
 </x-app-layout>
