@@ -11,15 +11,12 @@
                 {{ session('status') }}
             </div>
         @endif
-
         <div class="training-mode-grid relative z-10 gap-4 flex flex-col-reverse xl:grid xl:grid-cols-3" dir="ltr">
             <div class="hub-float-in hub-mode-card-shell">
                 <a href="{{ route('challenge.index') }}" class="hub-mode-card hub-mode-card-yellow text-right" dir="rtl">
                     <div class="flex items-start justify-between gap-4">
                         <p class="text-xs font-semibold tracking-[0.18em] text-white/80">الأصعب</p>
-                        <svg class="hub-mode-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M6 18c2.2-3.3 5-5.4 8.5-6.5M10 7l2.2 2.2M15.5 5l2.5 2.5M4.5 13.5l2 2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                        <img src="{{ asset('images/hub/weekly-challenge.png') }}" alt="" class="hub-mode-icon-image" aria-hidden="true">
                     </div>
                     <div class="hub-mode-card-body">
                         <h2 class="hub-mode-card-title">تحدّي أسبوعي</h2>
@@ -32,9 +29,7 @@
                 <a href="{{ route('training.builder') }}" class="hub-mode-card hub-mode-card-red text-right" dir="rtl">
                     <div class="flex items-start justify-between gap-4">
                         <p class="text-xs font-semibold tracking-[0.18em] text-white/80">مرن</p>
-                        <svg class="hub-mode-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M8 4h8l2 3-6 13h-1L5 7l3-3Z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-                        </svg>
+                        <img src="{{ asset('images/hub/builder.png') }}" alt="" class="hub-mode-icon-image" aria-hidden="true">
                     </div>
                     <div class="hub-mode-card-body">
                         <h2 class="hub-mode-card-title">تركيب الإمتحان</h2>
@@ -49,9 +44,7 @@
                     <button type="submit" class="hub-mode-card hub-mode-card-black hub-mode-card-button text-right" dir="rtl">
                         <div class="flex items-start justify-between gap-4">
                             <p class="text-xs font-semibold tracking-[0.18em] text-white/80">الأسرع</p>
-                            <svg class="hub-mode-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M13 2 5 14h5l-1 8 8-12h-5l1-8Z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+                            <img src="{{ asset('images/hub/instant.png') }}" alt="" class="hub-mode-icon-image" aria-hidden="true">
                         </div>
                         <div class="hub-mode-card-body">
                             <h2 class="hub-mode-card-title">امتحان عشوائي</h2>
@@ -61,7 +54,6 @@
                 </form>
             </div>
         </div>
-
         <section class="hub-surface training-library-surface p-6 hub-float-in">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>

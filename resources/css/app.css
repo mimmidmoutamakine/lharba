@@ -606,10 +606,20 @@
     font-weight: 650;
 }
 
-.hub-mode-icon {
+.hub-mode-icon-image {
     width: 2rem;
     height: 2rem;
-    opacity: 0.92;
+    object-fit: contain;
+    display: block;
+    opacity: 0.95;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .hub-mode-icon-image {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
 }
 
 .hub-inline-actions {
