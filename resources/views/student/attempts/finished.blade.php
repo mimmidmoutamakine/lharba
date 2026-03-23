@@ -29,10 +29,10 @@
                 </div>
             @else
                 <div class="mt-6 text-[44px] font-semibold leading-tight">
-                    Ich danke Ihnen!
+                    تــيلك بــحر وقلال نينجاوات
                 </div>
                 <div class="text-[28px] font-medium leading-tight">
-                    Prufung abgegeben. Unten sehen Sie Ihre Losungen und die richtigen Antworten.
+                    شوف فالأسفل الأجوبة ديالك والحلول ديالهم ولا ضغط  على تصحيح باش تراجع الإمتحان
                 </div>
             @endif
 
@@ -56,7 +56,7 @@
                         @endforeach
                         <button type="submit"
                                 class="inline-flex rounded-md border border-emerald-300 bg-emerald-500 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-emerald-600">
-                            Fehlerbereiche jetzt trainieren
+                            إعادة المحاولة
                         </button>
                     </form>
                 @endif
@@ -64,26 +64,17 @@
                 @if(!empty($reviewStartPartId))
                     <a href="{{ route('attempts.review.show', [$attempt, $reviewStartPartId]) }}"
                        class="inline-flex rounded-md border border-white/30 bg-white/10 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-white/20">
-                        Fehler im Quiz-Modus ansehen
+                        تصحيح
                     </a>
                 @endif
-
-                <form method="POST" action="{{ route('training.continue-plan') }}" class="inline-flex">
-                    @csrf
-                    <button type="submit"
-                            class="inline-flex rounded-md border border-amber-300 bg-amber-500 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-amber-600">
-                        Mit Plan fortsetzen
-                    </button>
-                </form>
-
                 <a href="{{ route('progress.index') }}"
                    class="inline-flex rounded-md border border-indigo-300 bg-indigo-500 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-indigo-600">
-                    Fortschritt ansehen
+                    إحصائيات
                 </a>
 
                 <a href="{{ route('dashboard') }}"
                    class="inline-flex rounded-md border border-blue-500 bg-[#11357b] px-6 py-3 text-lg font-semibold text-white shadow hover:bg-[#0f2f6d]">
-                    Zuruck auf die Startseite
+                    الصفحة الرئيسية
                 </a>
             </div>
 
