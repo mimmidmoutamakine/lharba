@@ -75,7 +75,7 @@
             display: flex;
             align-items: center;
             gap: 18px;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
         }
 
         .hero-left {
@@ -91,10 +91,10 @@
         .hero-right {
             flex: 1;
             border: 4px solid #111;
-            min-height: 96px;
+            /* max-height: 50px; */
             display: flex;
             align-items: center;
-            padding: 18px 22px;
+            padding: 5px 10px;
             background: #fff;
         }
 
@@ -107,12 +107,12 @@
         }
 
         .instruction {
-            margin: 0 0 16px;
-            font-size: 14px;
+            margin: 0 0 5px;
+            font-size: 10px;
             background: #fff9e8;
             border: 1px solid #efd56a;
             border-radius: 18px;
-            padding: 14px 18px;
+            /* padding: 14px 18px; */
         }
 
         .passage-box {
@@ -125,7 +125,7 @@
 
         .passage-text {
             font-size: 12pt;
-            line-height: 1.2;
+            line-height: 1;
             color: #111827;
             white-space: pre-line;
         }
