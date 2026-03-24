@@ -114,14 +114,15 @@
                         </svg>
                     </button>
                 </form>
-
                 @php
                     $printableTypes = [
                         \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
                         \App\Models\ExamPart::TYPE_READING_TEXT_MCQ,
+                        \App\Models\ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X,
+                        \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ,
+                        \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_POOL_GAP_MATCH,
                     ];
                 @endphp
-
                 @if (in_array($item->part_type, $printableTypes, true))
                     <a title="طباعة" href="{{ route('training.models.print', $item) }}" target="_blank" class="hub-outline-action" aria-label="طباعة">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
