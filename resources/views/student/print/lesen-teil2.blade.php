@@ -138,7 +138,7 @@
         }
 
         .question-block {
-            margin-bottom: 16px;
+            margin-bottom: 5px;
             break-inside: avoid;
             page-break-inside: avoid;
         }
@@ -169,14 +169,14 @@
         }
 
         .options-table td {
-            padding: 12px 14px;
+            padding: 3px 3px;
             vertical-align: top;
         }
 
         .option-key {
             width: 54px;
             text-align: center;
-            font-size: 18px;
+            font-size: 10px;
             font-weight: 800;
             color: #0f172a;
             background: #eef1ff;
@@ -184,7 +184,7 @@
         }
 
         .option-text {
-            font-size: 16px;
+            font-size: 15px;
             color: #111827;
         }
 
