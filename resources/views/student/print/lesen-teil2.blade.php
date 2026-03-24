@@ -124,7 +124,7 @@
         }
 
         .passage-text {
-            font-size: 12pt;
+            font-size: 11.5pt;
             line-height: 1;
             color: #111827;
             white-space: pre-line;
