@@ -115,7 +115,14 @@
                     </button>
                 </form>
 
-                @if ($item->part_type === \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS)
+                @php
+                    $printableTypes = [
+                        \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
+                        \App\Models\ExamPart::TYPE_READING_TEXT_MCQ,
+                    ];
+                @endphp
+
+                @if (in_array($item->part_type, $printableTypes, true))
                     <a title="طباعة" href="{{ route('training.models.print', $item) }}" target="_blank" class="hub-outline-action" aria-label="طباعة">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
                             <path d="M7 8V5.5A1.5 1.5 0 0 1 8.5 4h7A1.5 1.5 0 0 1 17 5.5V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>

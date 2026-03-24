@@ -19,6 +19,7 @@ class PartPrintController extends Controller
 
         return match ($model->part_type) {
             ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS => $this->showLesenTeil1($model, $content, $showAnswers),
+            ExamPart::TYPE_READING_TEXT_MCQ => $this->showLesenTeil2($model, $content, $showAnswers),
             default => abort(404),
         };
     }
@@ -34,6 +35,30 @@ class PartPrintController extends Controller
             'texts' => $texts,
             'options' => $options,
             'answers' => $answers,
+            'showAnswers' => $showAnswers,
+        ]);
+    }
+
+    private function showLesenTeil2(PartBankItem $model, array $content, bool $showAnswers): View
+    {
+        $passage = $content['passage'] ?? [];
+
+        $questions = collect($content['questions'] ?? [])
+            ->sortBy('sort_order')
+            ->map(function (array $question) {
+                $question['options'] = collect($question['options'] ?? [])
+                    ->sortBy('sort_order')
+                    ->values()
+                    ->all();
+
+                return $question;
+            })
+            ->values();
+
+        return view('student.print.lesen-teil2', [
+            'item' => $model,
+            'passage' => $passage,
+            'questions' => $questions,
             'showAnswers' => $showAnswers,
         ]);
     }
