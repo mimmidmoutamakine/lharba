@@ -440,10 +440,149 @@
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header
+        :attempt="$attempt"
+        :exam="$attempt->exam"
+        :part-tabs="$partTabs"
+        :current-part-id="$part->id"
+        :completed-part-ids="$completedPartIds"
+    />
 
-    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
-    <main class="mx-auto flex max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex-row">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+        {{ $part->section->title }}, {{ strtoupper($part->title) }}
+    </div>
+
+    {{-- MOBILE ONLY --}}
+    <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
+        <section class="space-y-3">
+            <x-exam.instruction-box :text="$part->instruction_text" />
+
+            <div class="sticky top-2 z-20 space-y-2">
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 shadow backdrop-blur">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-sm font-semibold text-slate-700">
+                            <span x-text="answeredCount()"></span>/{{ $part->lesenSituations->count() }} beantwortet
+                        </div>
+
+                        <button
+                            type="button"
+                            class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
+                            @click="openAdsSheet()"
+                        >
+                            Texte öffnen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-3 py-3 shadow backdrop-blur">
+                    <div class="mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                        @foreach($part->lesenSituations as $index => $situation)
+                            <button
+                                type="button"
+                                class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
+                                :class="navigatorButtonClass({{ $situation->id }})"
+                                @click="scrollToSituation({{ $situation->id }})"
+                            >
+                                {{ $index + 1 }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                @foreach($part->lesenSituations as $index => $situation)
+                    <article
+                        id="situation-{{ $situation->id }}"
+                        class="rounded-xl border border-slate-300 bg-[#eceef8] p-4 shadow scroll-mt-[185px]"
+                        :class="mobileSituationCardClass({{ $situation->id }})"
+                    >
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                            <h4 class="text-[18px] font-bold leading-tight text-slate-900">
+                                {{ $index + 1 }}. {{ $situation->situation_text }}
+                            </h4>
+
+                            <template x-if="assignments['{{ $situation->id }}']">
+                                <span class="shrink-0 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white">
+                                    OK
+                                </span>
+                            </template>
+                        </div>
+
+                        <div class="grid grid-cols-[1fr_auto] gap-3">
+                            <button
+                                type="button"
+                                class="flex min-h-12 items-center rounded-xl border px-3 py-2 text-left"
+                                :class="mobileAnswerSlotClass({{ $situation->id }})"
+                                @click="openAdsForSituation({{ $situation->id }})"
+                            >
+                                <template x-if="assignments['{{ $situation->id }}'] && assignments['{{ $situation->id }}'] !== 'X'">
+                                    <span
+                                        class="inline-flex max-w-full items-center rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white"
+                                        x-text="mobileAssignedAdLabel({{ $situation->id }})"
+                                    ></span>
+                                </template>
+
+                                <template x-if="assignments['{{ $situation->id }}'] === 'X'">
+                                    <span class="inline-flex items-center rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-semibold text-white">
+                                        X
+                                    </span>
+                                </template>
+
+                                <template x-if="!assignments['{{ $situation->id }}']">
+                                    <span class="text-base font-semibold text-slate-500">
+                                        Text wählen
+                                    </span>
+                                </template>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="flex h-12 w-12 items-center justify-center rounded-full border-2 text-lg font-bold transition"
+                                :class="mobileXButtonClass({{ $situation->id }})"
+                                @click="toggleXFromMobile({{ $situation->id }})"
+                            >
+                                X
+                            </button>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap justify-between gap-2">
+                            <div class="flex gap-2">
+                                <button
+                                    type="button"
+                                    class="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700"
+                                    @click="openAdsSheet()"
+                                >
+                                    Texte
+                                </button>
+
+                                <template x-if="assignments['{{ $situation->id }}']">
+                                    <button
+                                        type="button"
+                                        class="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 ring-1 ring-red-200"
+                                        @click="clearSituationAssignmentOnly({{ $situation->id }})"
+                                    >
+                                        Auswahl löschen
+                                    </button>
+                                </template>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 ring-1 ring-blue-200"
+                                @click="goToNextUnansweredFrom({{ $situation->id }})"
+                            >
+                                Nächste
+                            </button>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    </main>
+
+    {{-- DESKTOP ONLY - UNTOUCHED --}}
+    <main class="mx-auto hidden max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex xl:flex-row">
         <section class="flex-1 space-y-4">
             <x-exam.instruction-box :text="$part->instruction_text" />
 
@@ -494,7 +633,108 @@
         </aside>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    {{-- MOBILE ADS SHEET --}}
+    <div
+        x-cloak
+        x-show="adsSheetOpen"
+        class="fixed inset-0 z-[80] xl:hidden"
+        aria-modal="true"
+        role="dialog"
+    >
+        <div class="absolute inset-0 bg-black/45" @click="closeAdsSheet()"></div>
+
+        <div
+            x-show="adsSheetOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+        >
+            <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
+
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-500">Lesen Teil 3</div>
+                    <div class="text-xl font-bold text-slate-900">
+                        Texte A–L
+                        <template x-if="activeSituationId">
+                            <span class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
+                                Wählen
+                            </span>
+                        </template>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700"
+                    @click="closeAdsSheet()"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div class="mb-3 mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                @foreach($part->lesenSituationAds as $ad)
+                    <button
+                        type="button"
+                        class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
+                        :class="adNavigatorClass({{ $ad->id }})"
+                        @click="scrollToAdCard({{ $ad->id }})"
+                    >
+                        {{ $ad->label }}
+                    </button>
+                @endforeach
+            </div>
+
+            <div class="space-y-3 overflow-y-auto pr-1" style="max-height: calc(85vh - 140px);">
+                @foreach($part->lesenSituationAds as $ad)
+                    <article
+                        id="ad-mobile-{{ $ad->id }}"
+                        class="rounded-xl border border-slate-300 bg-white p-4 shadow scroll-mt-20 transition duration-200"
+                        :class="mobileAdCardClass({{ $ad->id }})"
+                        @click="assignAdDirectlyFromAdsSheet({{ $ad->id }})"
+                    >
+                        <div class="mb-3 flex items-center justify-between gap-3">
+                            <div class="min-w-0 flex-1 rounded-xl border border-indigo-300 bg-[#b5b8ff] px-3 py-2">
+                                <div class="text-xl font-bold text-slate-900">
+                                    {{ $ad->label }}{{ $ad->title ? '. '.$ad->title : '' }}
+                                </div>
+                            </div>
+                            <div class="mb-2 flex items-center gap-2">
+                                <template x-if="wasJustAssigned({{ $ad->id }})">
+                                    <span class="rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white">
+                                        Gewählt
+                                    </span>
+                                </template>
+
+                                <template x-if="isAdUsed({{ $ad->id }}) && !wasJustAssigned({{ $ad->id }})">
+                                    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600">
+                                        Verwendet
+                                    </span>
+                                </template>
+                            </div>
+                            <template x-if="pickerOpen && activeSituationId">
+                                <span class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
+                                    Wählen
+                                </span>
+                            </template>
+                        </div>
+
+                        <div class="whitespace-pre-line text-[17px] leading-8 text-slate-900">
+                            {{ $ad->body_text }}
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- DESKTOP FOOTER ONLY --}}
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />

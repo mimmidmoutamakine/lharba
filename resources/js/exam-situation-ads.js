@@ -17,6 +17,15 @@ window.situationAdsEngine = function situationAdsEngine(config) {
         isSubmitting: false,
         draftKey: null,
 
+        adsSheetOpen: false,
+        pickerOpen: false,
+        activeSituationId: null,
+        activeAdPreviewId: null,
+
+        lastAssignedAdId: null,
+        lastAssignedSituationId: null,
+        justAssignedAt: 0,
+
         init() {
             this.draftKey = `telc_attempt_${this.attemptId}_part_${this.partId}_draft`;
             this.situations.forEach((s) => {
@@ -34,6 +43,7 @@ window.situationAdsEngine = function situationAdsEngine(config) {
             this.updateTimerLabel();
             this.startTimer();
             this.updateCompletionIndicators();
+            this.activeSituationId = Number(this.situations?.[0]?.id || 0);
         },
 
         bindTabNavigation() {
@@ -374,6 +384,286 @@ window.situationAdsEngine = function situationAdsEngine(config) {
             } catch (_) {
                 return 0;
             }
+        },
+
+        lockBody() {
+            document.body.classList.add('overflow-hidden');
+        },
+
+        unlockBodyIfNoSheet() {
+            if (!this.adsSheetOpen && !this.pickerOpen) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        },
+        openAdsSheet() {
+            this.adsSheetOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closeAdsSheet() {
+            this.adsSheetOpen = false;
+            if (!this.pickerOpen) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        },
+
+        openPickerForSituation(situationId) {
+            this.activeSituationId = Number(situationId);
+            this.selectedSituationId = Number(situationId);
+            this.pickerOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closePicker() {
+            this.pickerOpen = false;
+            this.selectedSituationId = null;
+            if (!this.adsSheetOpen) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        },
+
+        toggleXFromMobile(situationId) {
+            this.activeSituationId = Number(situationId);
+            this.toggleX(situationId);
+            this.goToNextUnansweredFrom(situationId);
+        },
+
+        assignAdFromPicker(adId) {
+            if (!this.activeSituationId) return;
+            this.assignAdToSituation(this.activeSituationId, adId);
+            this.closePicker();
+            this.goToNextUnansweredFrom(this.activeSituationId);
+        },
+
+        assignXFromPicker() {
+            if (!this.activeSituationId) return;
+            this.assignments[this.activeSituationId] = 'X';
+            this.selectedAdId = null;
+            this.selectedSituationId = null;
+            this.queueAutosave();
+            this.updateCompletionIndicators();
+            const currentId = this.activeSituationId;
+            this.closePicker();
+            this.goToNextUnansweredFrom(currentId);
+        },
+
+        clearSituationAssignment(situationId) {
+            this.assignments[situationId] = null;
+            this.selectedAdId = null;
+            this.selectedSituationId = null;
+            this.queueAutosave();
+            this.updateCompletionIndicators();
+            this.closePicker();
+        },
+
+        mobileAssignedAdLabel(situationId) {
+            const value = this.assignments?.[situationId];
+            if (!value || value === 'X') return '';
+            const ad = this.ads.find((item) => Number(item.id) === Number(value));
+            return ad ? ad.label : '';
+        },
+
+        navigatorButtonClass(situationId) {
+            if (Number(this.activeSituationId) === Number(situationId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.assignments?.[situationId]) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToSituation(situationId) {
+            this.activeSituationId = Number(situationId);
+            const el = document.getElementById(`situation-${situationId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        goToNextUnansweredFrom(situationId) {
+            const ids = (this.situations || []).map((s) => Number(s.id));
+            const currentIndex = ids.indexOf(Number(situationId));
+
+            if (currentIndex === -1) return;
+
+            for (let i = currentIndex + 1; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.assignments?.[id]) {
+                    this.scrollToSituation(id);
+                    return;
+                }
+            }
+
+            for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.assignments?.[id]) {
+                    this.scrollToSituation(id);
+                    return;
+                }
+            }
+        },
+
+        mobileSituationCardClass(situationId) {
+            if (Number(this.activeSituationId) === Number(situationId)) {
+                return 'border-blue-300 ring-2 ring-blue-200';
+            }
+
+            if (this.assignments?.[situationId]) {
+                return 'border-emerald-300 ring-1 ring-emerald-200';
+            }
+
+            return 'border-slate-300';
+        },
+
+        mobileAnswerSlotClass(situationId) {
+            const value = this.assignments?.[situationId];
+
+            if (value === 'X') {
+                return 'border-slate-400 bg-slate-100';
+            }
+
+            if (value) {
+                return 'border-emerald-300 bg-emerald-50';
+            }
+
+            return 'border-slate-300 bg-white';
+        },
+
+        mobileXButtonClass(situationId) {
+            return this.assignments?.[situationId] === 'X'
+                ? 'border-slate-700 bg-slate-700 text-white'
+                : 'border-slate-300 bg-white text-slate-700';
+        },
+
+        pickerAdButtonClass(adId) {
+            if (!this.activeSituationId) {
+                return 'border-slate-300 bg-white text-slate-700';
+            }
+
+            const currentValue = this.assignments?.[this.activeSituationId];
+
+            if (Number(currentValue) === Number(adId)) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300';
+            }
+
+            if (this.isAdUsed(adId)) {
+                return 'border-slate-200 bg-slate-100 text-slate-400 opacity-50';
+            }
+
+            return 'border-indigo-300 bg-[#b5b8ff] text-slate-900';
+        },
+
+        pickerXButtonClass() {
+            if (!this.activeSituationId) {
+                return 'border-slate-300 bg-white text-slate-700';
+            }
+
+            return this.assignments?.[this.activeSituationId] === 'X'
+                ? 'border-slate-700 bg-slate-700 text-white'
+                : 'border-slate-300 bg-white text-slate-700';
+        },
+
+        activeSituationNumber() {
+            if (!this.activeSituationId) return '';
+            const index = (this.situations || []).findIndex((s) => Number(s.id) === Number(this.activeSituationId));
+            return index >= 0 ? index + 1 : '';
+        },
+
+        adNavigatorClass(adId) {
+            if (Number(this.activeAdPreviewId) === Number(adId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.isAdUsed(adId)) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToAdCard(adId) {
+            this.activeAdPreviewId = Number(adId);
+            const el = document.getElementById(`ad-mobile-${adId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        mobileAdCardClass(adId) {
+            const currentValue = this.activeSituationId ? this.assignments?.[this.activeSituationId] : null;
+
+            if (this.wasJustAssigned(adId)) {
+                return 'border-emerald-500 bg-emerald-50 ring-4 ring-emerald-300 scale-[0.985]';
+            }
+
+            if (Number(currentValue) === Number(adId)) {
+                return 'border-emerald-400 ring-2 ring-emerald-300 bg-emerald-50';
+            }
+
+            if (Number(this.activeAdPreviewId) === Number(adId)) {
+                return 'border-blue-300 ring-2 ring-blue-200';
+            }
+
+            if (this.isAdUsed(adId)) {
+                return 'border-slate-300 bg-slate-50 opacity-60';
+            }
+
+            if (this.activeSituationId) {
+                return 'border-indigo-300 hover:ring-2 hover:ring-blue-200 active:scale-[0.99]';
+            }
+
+            return 'border-slate-300';
+        },
+
+        assignAdDirectlyFromAdsSheet(adId) {
+            this.activeAdPreviewId = Number(adId);
+
+            if (!this.activeSituationId) {
+                return;
+            }
+
+            if (this.isAdUsed(adId) && Number(this.assignments?.[this.activeSituationId]) !== Number(adId)) {
+                return;
+            }
+
+            const currentId = this.activeSituationId;
+            this.lastAssignedAdId = Number(adId);
+            this.lastAssignedSituationId = Number(currentId);
+            this.justAssignedAt = Date.now();
+
+            this.assignAdToSituation(currentId, adId);
+
+            setTimeout(() => {
+                this.closeAdsSheet();
+                this.goToNextUnansweredFrom(currentId);
+            }, 180);
+        },
+
+        openAdsForSituation(situationId) {
+            this.activeSituationId = Number(situationId);
+            this.selectedSituationId = Number(situationId);
+            this.openAdsSheet();
+        },
+
+        wasJustAssigned(adId) {
+            if (!this.lastAssignedAdId) return false;
+            return Number(this.lastAssignedAdId) === Number(adId) && (Date.now() - this.justAssignedAt < 900);
+        },
+        
+        clearSituationAssignmentOnly(situationId) {
+            this.assignments[situationId] = null;
+            this.selectedAdId = null;
+            this.selectedSituationId = null;
+
+            if (Number(this.activeSituationId) === Number(situationId)) {
+                this.activeSituationId = Number(situationId);
+            }
+
+            this.queueAutosave();
+            this.updateCompletionIndicators();
         },
     };
 };
