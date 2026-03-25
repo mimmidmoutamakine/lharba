@@ -21,7 +21,105 @@ window.matchingEngine = function matchingEngine(config) {
         timerInterval: null,
         isSubmitting: false,
         draftKey: null,
+        mobilePickerOpen: false,
+        activeTextId: null,
 
+        answeredCount() {
+            return Object.values(this.assignments || {}).filter(Boolean).length;
+        },
+
+        openMobilePicker(textId) {
+            this.activeTextId = textId;
+
+            // نخليو نفس منطق desktop خدام
+            if (typeof this.handleTextClick === 'function') {
+                this.handleTextClick(textId);
+            }
+
+            this.mobilePickerOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closeMobilePicker() {
+            this.mobilePickerOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        },
+
+        chooseMobileOption(optionId) {
+            if (!this.activeTextId) return;
+
+            // نستعمل نفس logic ديال desktop
+            if (typeof this.handleOptionClick === 'function') {
+                this.handleOptionClick(optionId);
+            }
+
+            this.closeMobilePicker();
+        },
+
+        clearActiveTextAssignment() {
+            if (!this.activeTextId) return;
+
+            if (typeof this.removeAssignment === 'function') {
+                this.removeAssignment(this.activeTextId);
+            }
+
+            this.closeMobilePicker();
+        },
+
+        activeTextLabel() {
+            if (!this.activeTextId) return '';
+            const found = this.textIds.find((id) => Number(id) === Number(this.activeTextId));
+            if (!found) return '';
+            const index = this.textIds.findIndex((id) => Number(id) === Number(this.activeTextId));
+            return index >= 0 ? index + 1 : '';
+        },
+
+        isOptionAssignedToAnotherText(optionId) {
+            const entries = Object.entries(this.assignments || {});
+            for (const [textId, assignedOptionId] of entries) {
+                if (Number(assignedOptionId) === Number(optionId) && Number(textId) !== Number(this.activeTextId)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        isOptionAssignedToActiveText(optionId) {
+            if (!this.activeTextId) return false;
+            return Number(this.assignments?.[this.activeTextId]) === Number(optionId);
+        },
+
+        mobileTextCardClass(textId) {
+            if (Number(this.activeTextId) === Number(textId) && this.mobilePickerOpen) {
+                return 'ring-2 ring-blue-500 border-blue-300';
+            }
+
+            if (this.assignments?.[textId]) {
+                return 'border-emerald-300 ring-1 ring-emerald-200';
+            }
+
+            return 'border-slate-300';
+        },
+
+        mobileAssignedHeaderClass(textId) {
+            if (this.assignments?.[textId]) {
+                return 'border-emerald-300 bg-emerald-50';
+            }
+
+            return 'border-slate-300 bg-slate-50';
+        },
+
+        mobileOptionButtonClass(optionId) {
+            if (this.isOptionAssignedToActiveText(optionId)) {
+                return 'border-emerald-400 bg-emerald-100 ring-2 ring-emerald-300';
+            }
+
+            if (this.isOptionAssignedToAnotherText(optionId)) {
+                return 'border-slate-200 bg-slate-100 opacity-45';
+            }
+
+            return 'border-indigo-300 bg-[#b5b8ff] hover:bg-[#a9adff]';
+        },
         init() {
             this.draftKey = `telc_attempt_${this.attemptId}_part_${this.partId}_draft`;
             this.options.forEach((option) => {

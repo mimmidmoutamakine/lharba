@@ -1660,9 +1660,14 @@
     min-height: 240px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1279px) {
     .exam-pane-height {
-        height: calc(100vh - 280px);
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    .exam-bottom-bar {
+        display: none !important;
     }
 }
 .auth-shell {

@@ -25,11 +25,78 @@
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header
+        :attempt="$attempt"
+        :exam="$attempt->exam"
+        :part-tabs="$partTabs"
+        :current-part-id="$part->id"
+        :completed-part-ids="$completedPartIds"
+    />
 
-    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+        {{ $part->section->title }}, {{ strtoupper($part->title) }}
+    </div>
 
-    <main class="mx-auto flex max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex-row">
+    {{-- MOBILE ONLY --}}
+    <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
+        <section class="space-y-3">
+            <x-exam.instruction-box :text="$part->instruction_text" />
+
+            <div class="flex items-center justify-between rounded-2xl border border-slate-300 bg-white px-4 py-3 shadow-sm">
+                <div class="text-sm font-semibold text-slate-700">
+                    <span x-text="answeredCount()"></span>/<span>{{ $part->lesenMatchingTexts->count() }}</span> beantwortet
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
+                    @click="resetPart()"
+                >
+                    Zurücksetzen
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                @foreach($part->lesenMatchingTexts as $text)
+                    <article
+                        class="rounded-xl border border-slate-300 bg-white p-3 shadow-sm"
+                        :class="mobileTextCardClass({{ (int) $text->id }})"
+                    >
+                        <button
+                            type="button"
+                            class="mb-3 flex min-h-12 w-full items-center justify-between rounded-xl border px-3 py-2 text-left"
+                            :class="mobileAssignedHeaderClass({{ (int) $text->id }})"
+                            @click="openMobilePicker({{ (int) $text->id }})"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <template x-if="assignments['{{ $text->id }}']">
+                                    <span
+                                        class="inline-flex max-w-full items-center rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white"
+                                        x-text="optionLabel(assignments['{{ $text->id }}'])"
+                                    ></span>
+                                </template>
+
+                                <template x-if="!assignments['{{ $text->id }}']">
+                                    <span class="text-base font-semibold text-slate-500">
+                                        Text {{ $text->label }} — Überschrift wählen
+                                    </span>
+                                </template>
+                            </div>
+
+                            <span class="ml-3 shrink-0 text-lg text-slate-500">⌄</span>
+                        </button>
+
+                        <div class="whitespace-pre-line text-[17px] leading-8 text-slate-900">
+                            {{ $text->body_text }}
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    </main>
+
+    {{-- DESKTOP ONLY: EXACTLY YOUR OLD LAYOUT --}}
+    <main class="mx-auto hidden max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex xl:flex-row">
         <section class="flex-1 space-y-4">
             <x-exam.instruction-box :text="$part->instruction_text" />
             <div id="textsColumn" class="exam-pane-height space-y-4 overflow-y-auto pr-2">
@@ -49,12 +116,91 @@
             </div>
 
             <div class="mt-5 flex justify-center">
-                <button type="button" class="rounded-xl bg-blue-700 px-10 py-3 text-2xl font-semibold text-white shadow hover:bg-blue-600" @click="resetPart()">Zurucksetzen</button>
+                <button
+                    type="button"
+                    class="rounded-xl bg-blue-700 px-10 py-3 text-2xl font-semibold text-white shadow hover:bg-blue-600"
+                    @click="resetPart()"
+                >
+                    Zurücksetzen
+                </button>
             </div>
         </aside>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    {{-- MOBILE BOTTOM SHEET --}}
+    <div
+        x-cloak
+        x-show="mobilePickerOpen"
+        class="fixed inset-0 z-[80] xl:hidden"
+        aria-modal="true"
+        role="dialog"
+    >
+        <div
+            class="absolute inset-0 bg-black/45"
+            @click="closeMobilePicker()"
+        ></div>
+
+        <div
+            x-show="mobilePickerOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full"
+            class="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
+        >
+            <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
+
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-500">Lesen Teil 1</div>
+                    <div class="text-lg font-bold text-slate-900">
+                        Text <span x-text="activeTextLabel()"></span> — Überschrift wählen
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700"
+                    @click="closeMobilePicker()"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <template x-if="activeTextId && assignments[activeTextId]">
+                <div class="mb-3">
+                    <button
+                        type="button"
+                        class="w-full rounded-xl bg-red-50 px-4 py-3 text-left font-semibold text-red-700 ring-1 ring-red-200"
+                        @click="clearActiveTextAssignment()"
+                    >
+                        Antwort entfernen
+                    </button>
+                </div>
+            </template>
+
+            <div class="max-h-[58vh] space-y-2 overflow-y-auto pr-1">
+                @foreach($part->lesenMatchingOptions as $option)
+                    <button
+                        type="button"
+                        class="flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left shadow-sm transition"
+                        :class="mobileOptionButtonClass({{ (int) $option->id }})"
+                        @click="chooseMobileOption({{ (int) $option->id }})"
+                    >
+                        <span class="mt-0.5 text-base font-bold text-slate-700">{{ $option->option_key }}.</span>
+                        <span class="text-[17px] font-semibold leading-6 text-slate-900">
+                            {{ $option->option_text }}
+                        </span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- DESKTOP FOOTER ONLY --}}
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -120,7 +266,7 @@
         </aside>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -198,7 +344,7 @@
         </aside>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -298,7 +444,7 @@
         </aside>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -397,7 +543,7 @@
         </aside>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -471,7 +617,7 @@
         </div>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -600,7 +746,7 @@
         </div>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
