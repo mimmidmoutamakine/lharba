@@ -224,15 +224,100 @@
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header
+        :attempt="$attempt"
+        :exam="$attempt->exam"
+        :part-tabs="$partTabs"
+        :current-part-id="$part->id"
+        :completed-part-ids="$completedPartIds"
+    />
 
-    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+        {{ $part->section->title }}, {{ strtoupper($part->title) }}
+    </div>
 
-    <main class="mx-auto flex max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex-row">
+    @php $passage = $part->lesenMcqPassages->sortBy('sort_order')->first(); @endphp
+
+    {{-- MOBILE ONLY --}}
+    <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
+        <section class="space-y-3">
+            <x-exam.instruction-box :text="$part->instruction_text" />
+
+            <div class="sticky top-2 z-20 rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 shadow backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-semibold text-slate-700">
+                        <span x-text="answeredCount()"></span>/{{ $part->lesenMcqQuestions->count() }} beantwortet
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
+                        @click="openPassageSheet()"
+                    >
+                        Text öffnen
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                @foreach($part->lesenMcqQuestions as $index => $question)
+                    <article
+                        class="rounded-xl border border-slate-300 bg-[#eceef8] p-4 shadow"
+                        :class="mobileQuestionCardClass({{ $question->id }})"
+                        id="question-{{ $question->id }}"
+                    >
+                        <div class="mb-3 flex items-start justify-between gap-3">
+                            <h4 class="text-[18px] font-bold leading-tight text-slate-900">
+                                {{ $index + 1 }}. {{ $question->question_text }}
+                            </h4>
+
+                            <template x-if="choices['{{ $question->id }}']">
+                                <span class="shrink-0 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white">
+                                    OK
+                                </span>
+                            </template>
+                        </div>
+
+                        <div class="space-y-2">
+                            @foreach($question->options as $option)
+                                <label
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition"
+                                    :class="mobileOptionClass({{ $question->id }}, {{ $option->id }})"
+                                >
+                                    <input
+                                        type="radio"
+                                        class="mt-1 h-5 w-5 shrink-0"
+                                        name="mobile_q_{{ $question->id }}"
+                                        :checked="Number(choices['{{ $question->id }}'] || 0) === {{ $option->id }}"
+                                        @change="choose({{ $question->id }}, {{ $option->id }})"
+                                    >
+                                    <span class="text-[17px] leading-6 text-slate-900">
+                                        {{ $option->option_text }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-3 flex justify-end">
+                            <button
+                                type="button"
+                                class="rounded-lg bg-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700"
+                                @click="openPassageSheet()"
+                            >
+                                Zum Text
+                            </button>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    </main>
+
+    {{-- DESKTOP ONLY - UNTOUCHED --}}
+    <main class="mx-auto hidden max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex xl:flex-row">
         <section class="flex-1 space-y-4">
             <x-exam.instruction-box :text="$part->instruction_text" />
 
-            @php $passage = $part->lesenMcqPassages->sortBy('sort_order')->first(); @endphp
             <div class="exam-pane-height overflow-y-auto rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
                 @if($passage?->title)
                     <h3 class="mb-3 text-2xl font-bold">{{ $passage->title }}</h3>
@@ -266,7 +351,55 @@
         </aside>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    {{-- MOBILE PASSAGE SHEET --}}
+    <div
+        x-cloak
+        x-show="passageSheetOpen"
+        class="fixed inset-0 z-[80] xl:hidden"
+        aria-modal="true"
+        role="dialog"
+    >
+        <div class="absolute inset-0 bg-black/45" @click="closePassageSheet()"></div>
+
+        <div
+            x-show="passageSheetOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+        >
+            <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
+
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-500">Lesen Teil 2</div>
+                    @if($passage?->title)
+                        <div class="text-xl font-bold text-slate-900">{{ $passage->title }}</div>
+                    @else
+                        <div class="text-xl font-bold text-slate-900">Text</div>
+                    @endif
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700"
+                    @click="closePassageSheet()"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div class="overflow-y-auto pr-1 text-[18px] leading-9 text-slate-900" style="max-height: calc(85vh - 100px); white-space: pre-line;">
+                {{ $passage?->body_text }}
+            </div>
+        </div>
+    </div>
+
+    {{-- DESKTOP FOOTER ONLY --}}
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />

@@ -13,7 +13,32 @@ window.readingMcqEngine = function readingMcqEngine(config) {
         timerInterval: null,
         isSubmitting: false,
         draftKey: null,
+        passageSheetOpen: false,
 
+        openPassageSheet() {
+            this.passageSheetOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closePassageSheet() {
+            this.passageSheetOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        },
+
+        mobileQuestionCardClass(questionId) {
+            if (this.choices?.[questionId]) {
+                return 'border-emerald-300 ring-1 ring-emerald-200';
+            }
+            return 'border-slate-300';
+        },
+
+        mobileOptionClass(questionId, optionId) {
+            const current = Number(this.choices?.[questionId] || 0);
+            if (current === Number(optionId)) {
+                return 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-300';
+            }
+            return 'border-slate-300 bg-white';
+        },
         init() {
             this.draftKey = `telc_attempt_${this.attemptId}_part_${this.partId}_draft`;
             this.questionIds.forEach((id) => {
