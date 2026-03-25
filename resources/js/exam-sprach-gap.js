@@ -15,6 +15,11 @@ window.sprachGapEngine = function sprachGapEngine(config) {
         optionLabelMap: {},
         draftKey: null,
 
+        gapPickerOpen: false,
+        activeQuestionId: null,
+        lastPickedQuestionId: null,
+        lastPickedAt: 0,
+
         init() {
             this.draftKey = `telc_attempt_${this.attemptId}_part_${this.partId}_draft`;
             this.questions.forEach((question) => {
@@ -35,6 +40,7 @@ window.sprachGapEngine = function sprachGapEngine(config) {
             this.updateTimerLabel();
             this.startTimer();
             this.updateCompletionIndicators();
+            this.activeQuestionId = Number(this.questions?.[0]?.id || 0);
         },
 
         bindTabNavigation() {
@@ -297,6 +303,139 @@ window.sprachGapEngine = function sprachGapEngine(config) {
             } catch (_) {
                 return 0;
             }
+        },
+
+        openGapPicker(questionId) {
+            this.activeQuestionId = Number(questionId);
+            this.selectedQuestionId = Number(questionId);
+            this.gapPickerOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closeGapPicker() {
+            this.gapPickerOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        },
+
+        activeQuestion() {
+            return this.questions.find((q) => Number(q.id) === Number(this.activeQuestionId)) || null;
+        },
+
+        activeGapNumber() {
+            return this.activeQuestion()?.gap_number || '';
+        },
+
+        activeQuestionOptions() {
+            return this.activeQuestion()?.options || [];
+        },
+
+        chooseFromPicker(optionId) {
+            if (!this.activeQuestionId) return;
+
+            const currentQuestionId = Number(this.activeQuestionId);
+            this.choose(currentQuestionId, optionId);
+            this.lastPickedQuestionId = currentQuestionId;
+            this.lastPickedAt = Date.now();
+
+            setTimeout(() => {
+                this.closeGapPicker();
+                this.goToNextUnansweredFrom(currentQuestionId);
+            }, 160);
+        },
+
+        clearActiveGapChoice() {
+            if (!this.activeQuestionId) return;
+
+            this.choices[Number(this.activeQuestionId)] = null;
+            this.statusMessage = 'Autospeichern...';
+            this.queueAutosave();
+            this.updateCompletionIndicators();
+            this.closeGapPicker();
+        },
+
+        wasJustPicked(questionId) {
+            return Number(this.lastPickedQuestionId) === Number(questionId) && (Date.now() - this.lastPickedAt < 900);
+        },
+
+        navigatorButtonClass(questionId) {
+            if (Number(this.activeQuestionId) === Number(questionId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.choices?.[questionId]) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToGap(questionId) {
+            this.activeQuestionId = Number(questionId);
+            const el = document.getElementById(`gap-${questionId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        },
+
+        goToNextUnanswered() {
+            const firstUnanswered = (this.questions || []).find((q) => !this.choices?.[q.id]);
+            if (firstUnanswered) {
+                this.scrollToGap(firstUnanswered.id);
+                return;
+            }
+
+            if (this.questions?.length) {
+                this.scrollToGap(this.questions[0].id);
+            }
+        },
+
+        goToNextUnansweredFrom(questionId) {
+            const ids = (this.questions || []).map((q) => Number(q.id));
+            const currentIndex = ids.indexOf(Number(questionId));
+
+            if (currentIndex === -1) return;
+
+            for (let i = currentIndex + 1; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.choices?.[id]) {
+                    this.scrollToGap(id);
+                    return;
+                }
+            }
+
+            for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.choices?.[id]) {
+                    this.scrollToGap(id);
+                    return;
+                }
+            }
+        },
+
+        mobileGapChipClass(questionId) {
+            if (this.wasJustPicked(questionId)) {
+                return 'border-emerald-500 bg-emerald-500 ring-4 ring-emerald-300';
+            }
+
+            if (Number(this.activeQuestionId) === Number(questionId)) {
+                return 'border-blue-500 bg-blue-600';
+            }
+
+            if (this.choices?.[questionId]) {
+                return 'border-[#3d5f8a] bg-[#3d5f8a]';
+            }
+
+            return 'border-[#3d5f8a] bg-[#3d5f8a]';
+        },
+
+        mobileOptionButtonClass(optionId) {
+            const current = Number(this.choices?.[this.activeQuestionId] || 0);
+
+            if (current === Number(optionId)) {
+                return 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-300';
+            }
+
+            return 'border-slate-300 bg-white';
         },
     };
 };

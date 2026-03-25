@@ -762,11 +762,98 @@
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header
+        :attempt="$attempt"
+        :exam="$attempt->exam"
+        :part-tabs="$partTabs"
+        :current-part-id="$part->id"
+        :completed-part-ids="$completedPartIds"
+    />
 
-    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+        {{ $part->section->title }}, {{ strtoupper($part->title) }}
+    </div>
 
-    <main class="mx-auto flex max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex-row">
+    {{-- MOBILE ONLY --}}
+    <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
+        <section class="space-y-3">
+            <x-exam.instruction-box :text="$part->instruction_text" />
+
+            <div class="sticky top-2 z-20 space-y-2">
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 shadow backdrop-blur">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-sm font-semibold text-slate-700">
+                            <span x-text="answeredCount()"></span>/{{ $part->sprachGapQuestions->count() }} beantwortet
+                        </div>
+
+                        <button
+                            type="button"
+                            class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
+                            @click="goToNextUnanswered()"
+                        >
+                            Nächste Lücke
+                        </button>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-3 py-3 shadow backdrop-blur">
+                    <div class="mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                        @foreach($part->sprachGapQuestions->sortBy('sort_order') as $question)
+                            <button
+                                type="button"
+                                class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
+                                :class="navigatorButtonClass({{ $question->id }})"
+                                @click="scrollToGap({{ $question->id }})"
+                            >
+                                {{ $question->gap_number }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <article class="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                @if($passage?->title)
+                    <h3 class="mb-5 text-xl font-bold text-slate-900">{{ $passage->title }}</h3>
+                @endif
+
+                <div class="text-[22px] leading-[2.4] text-slate-900">
+                    @foreach($templateChunks as $chunkIndex => $chunk)
+                        @if($chunkIndex % 2 === 1)
+                            @php
+                                $gapNumber = (int) $chunk;
+                                $question = $part->sprachGapQuestions->firstWhere('gap_number', $gapNumber);
+                            @endphp
+                            @if($question)
+                                <button
+                                    id="gap-{{ $question->id }}"
+                                    type="button"
+                                    class="mx-1 inline-flex min-h-[44px] min-w-[86px] scroll-mt-[170px] items-center rounded-xl border-2 px-3 py-1.5 align-middle text-lg font-semibold text-white transition"
+                                    :class="mobileGapChipClass({{ $question->id }})"
+                                    @click="openGapPicker({{ $question->id }})"
+                                >
+                                    <span class="mr-2 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-[#042640] px-2 text-[20px]">
+                                        {{ $gapNumber }}
+                                    </span>
+                                    <span
+                                        class="max-w-[120px] truncate"
+                                        x-text="selectedLabel({{ $question->id }}) || '…'"
+                                    ></span>
+                                </button>
+                            @else
+                                <span class="mx-1 inline-block rounded-md bg-slate-300 px-3 py-1 align-middle text-sm font-semibold text-slate-700">[{{ $gapNumber }}]</span>
+                            @endif
+                        @else
+                            <span style="white-space: pre-line;">{{ $chunk }}</span>
+                        @endif
+                    @endforeach
+                </div>
+            </article>
+        </section>
+    </main>
+
+    {{-- DESKTOP ONLY - UNTOUCHED --}}
+    <main class="mx-auto hidden max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex xl:flex-row">
         <section class="flex-1 space-y-4">
             <x-exam.instruction-box :text="$part->instruction_text" />
 
@@ -834,7 +921,77 @@
         </aside>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    {{-- MOBILE PICKER SHEET --}}
+    <div
+        x-cloak
+        x-show="gapPickerOpen"
+        class="fixed inset-0 z-[90] xl:hidden"
+        aria-modal="true"
+        role="dialog"
+    >
+        <div class="absolute inset-0 bg-black/45" @click="closeGapPicker()"></div>
+
+        <div
+            x-show="gapPickerOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
+        >
+            <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
+
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-500">Sprachbausteine Teil 1</div>
+                    <div class="text-lg font-bold text-slate-900">
+                        Lücke <span x-text="activeGapNumber()"></span>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700"
+                    @click="closeGapPicker()"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <template x-for="option in activeQuestionOptions()" :key="option.id">
+                    <button
+                        type="button"
+                        class="flex w-full items-start gap-3 rounded-2xl border px-4 py-4 text-left transition"
+                        :class="mobileOptionButtonClass(option.id)"
+                        @click="chooseFromPicker(option.id)"
+                    >
+                        <span class="mt-0.5 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-[#02203d] px-2 text-sm font-bold text-white">
+                            <span x-text="activeGapNumber()"></span>
+                        </span>
+                        <span class="text-[18px] font-semibold leading-7 text-slate-900" x-text="option.option_text"></span>
+                    </button>
+                </template>
+            </div>
+
+            <template x-if="activeQuestionId && choices[activeQuestionId]">
+                <div class="mt-3">
+                    <button
+                        type="button"
+                        class="w-full rounded-xl bg-red-50 px-4 py-3 text-left font-semibold text-red-700 ring-1 ring-red-200"
+                        @click="clearActiveGapChoice()"
+                    >
+                        Auswahl löschen
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    {{-- DESKTOP FOOTER ONLY --}}
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -856,18 +1013,113 @@
         partId: {{ $part->id }},
         initialAssignments: @js($poolAssignments),
         gapIds: @js($part->sprachPoolGaps->pluck('id')->values()->all()),
-        options: @js($part->sprachPoolOptions->map(fn($o) => ['id' => $o->id, 'label' => $o->option_text])->values()->all()),
+        options: @js($part->sprachPoolOptions->map(fn($o) => ['id' => $o->id, 'label' => $o->option_text, 'key' => $o->option_key])->values()->all()),
+        gaps: @js($part->sprachPoolGaps->map(fn($g) => ['id' => $g->id, 'label' => $g->label])->values()->all()),
         remainingSeconds: {{ $moduleRemainingSeconds }},
     })"
     x-init="init()"
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header
+        :attempt="$attempt"
+        :exam="$attempt->exam"
+        :part-tabs="$partTabs"
+        :current-part-id="$part->id"
+        :completed-part-ids="$completedPartIds"
+    />
 
-    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+        {{ $part->section->title }}, {{ strtoupper($part->title) }}
+    </div>
 
-    <main class="mx-auto flex max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex-row">
+    {{-- MOBILE ONLY --}}
+    <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
+        <section class="space-y-3">
+            <x-exam.instruction-box :text="$part->instruction_text" />
+
+            <div class="sticky top-2 z-20 space-y-2">
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 shadow backdrop-blur">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-sm font-semibold text-slate-700">
+                            <span x-text="answeredCount()"></span>/{{ $part->sprachPoolGaps->count() }} beantwortet
+                        </div>
+
+                        <button
+                            type="button"
+                            class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
+                            @click="goToNextUnanswered()"
+                        >
+                            Nächste Lücke
+                        </button>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-300 bg-white/95 px-3 py-3 shadow backdrop-blur">
+                    <div class="mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                        @foreach($part->sprachPoolGaps as $gap)
+                            <button
+                                type="button"
+                                class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
+                                :class="navigatorButtonClass({{ $gap->id }})"
+                                @click="scrollToGap({{ $gap->id }})"
+                            >
+                                {{ $gap->label }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <article class="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                @if($poolPassage?->title)
+                    <h3 class="mb-5 text-xl font-bold text-slate-900">{{ $poolPassage->title }}</h3>
+                @endif
+
+                <div class="text-[22px] leading-[2.35] text-slate-900">
+                    @foreach($poolTemplateChunks as $chunkIndex => $chunk)
+                        @if($chunkIndex % 2 === 1)
+                            @php
+                                $gapLabel = (string) ((int) $chunk);
+                                $gap = $part->sprachPoolGaps->firstWhere('label', $gapLabel);
+                            @endphp
+                            @if($gap)
+                                <button
+                                    id="pool-gap-{{ $gap->id }}"
+                                    type="button"
+                                    class="mx-1 inline-flex min-h-[46px] min-w-[98px] scroll-mt-[170px] items-center rounded-xl border-2 px-3 py-1.5 align-middle text-lg font-semibold text-white transition"
+                                    :class="mobileGapChipClass({{ $gap->id }})"
+                                    @click="openPoolPicker({{ $gap->id }})"
+                                >
+                                    <span class="mr-2 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-[#042640] px-2 text-[20px]">
+                                        {{ $gap->label }}
+                                    </span>
+
+                                    <template x-if="assignments['{{ $gap->id }}']">
+                                        <span
+                                            class="max-w-[140px] truncate"
+                                            x-text="optionLabel(assignments['{{ $gap->id }}'])"
+                                        ></span>
+                                    </template>
+
+                                    <template x-if="!assignments['{{ $gap->id }}']">
+                                        <span class="text-slate-200">…{{ $gap->label }}…</span>
+                                    </template>
+                                </button>
+                            @else
+                                <span class="mx-1 inline-block rounded-md bg-slate-300 px-3 py-1 align-middle text-sm font-semibold text-slate-700">[{{ $gapLabel }}]</span>
+                            @endif
+                        @else
+                            <span style="white-space: pre-line;">{{ $chunk }}</span>
+                        @endif
+                    @endforeach
+                </div>
+            </article>
+        </section>
+    </main>
+
+    {{-- DESKTOP ONLY - UNTOUCHED --}}
+    <main class="mx-auto hidden max-w-[1650px] flex-col gap-3 px-3 py-3 xl:flex xl:flex-row">
         <section class="flex-1 space-y-4">
             <x-exam.instruction-box :text="$part->instruction_text" />
 
@@ -899,7 +1151,7 @@
                                                   x-text="optionLabel(assignments['{{ $gap->id }}'])"></span>
                                         </template>
                                         <template x-if="!assignments['{{ $gap->id }}']">
-                                            <span class="text-slate-500">...{{ $gap->label }}...</span>
+                                            <span class="text-slate-500">.{{ $gap->label }}.</span>
                                         </template>
                                     </button>
                                 </span>
@@ -933,7 +1185,89 @@
         </aside>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 bg-[#001332] px-6 py-2 text-sm text-white">
+    {{-- MOBILE PICKER SHEET --}}
+    <div
+        x-cloak
+        x-show="poolPickerOpen"
+        class="fixed inset-0 z-[90] xl:hidden"
+        aria-modal="true"
+        role="dialog"
+    >
+        <div class="absolute inset-0 bg-black/45" @click="closePoolPicker()"></div>
+
+        <div
+            x-show="poolPickerOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full"
+            x-transition:enter-end="translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0"
+            x-transition:leave-end="translate-y-full"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
+        >
+            <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
+
+            <div class="mb-3 flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-500">Sprachbausteine Teil 2</div>
+                    <div class="text-lg font-bold text-slate-900">
+                        Lücke <span x-text="activeGapLabel()"></span>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700"
+                    @click="closePoolPicker()"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div class="mb-3 mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                <template x-for="option in options" :key="option.id">
+                    <button
+                        type="button"
+                        class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
+                        :class="poolOptionNavigatorClass(option.id)"
+                        @click="scrollToPoolOption(option.id)"
+                        x-text="option.key || '•'"
+                    ></button>
+                </template>
+            </div>
+
+            <div class="space-y-2 overflow-y-auto pr-1" style="max-height: calc(85vh - 160px);">
+                <template x-for="option in options" :key="option.id">
+                    <button
+                        type="button"
+                        :id="`pool-option-${option.id}`"
+                        class="flex w-full items-start gap-3 rounded-2xl border px-4 py-4 text-left transition scroll-mt-20"
+                        :class="mobilePoolOptionClass(option.id)"
+                        @click="assignFromPoolPicker(option.id)"
+                    >
+                        <span class="mt-0.5 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-[#02203d] px-2 text-sm font-bold text-white"
+                              x-text="option.key || '•'"></span>
+                        <span class="text-[18px] font-semibold leading-7 text-slate-900" x-text="option.label"></span>
+                    </button>
+                </template>
+            </div>
+
+            <template x-if="activeGapId && assignments[activeGapId]">
+                <div class="mt-3">
+                    <button
+                        type="button"
+                        class="w-full rounded-xl bg-red-50 px-4 py-3 text-left font-semibold text-red-700 ring-1 ring-red-200"
+                        @click="clearActivePoolAssignment()"
+                    >
+                        Auswahl löschen
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    {{-- DESKTOP FOOTER ONLY --}}
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />

@@ -18,6 +18,12 @@ window.sprachPoolEngine = function sprachPoolEngine(config) {
         isSubmitting: false,
         draftKey: null,
 
+        poolPickerOpen: false,
+        activeGapId: null,
+        activePoolOptionPreviewId: null,
+        lastPickedGapId: null,
+        lastPickedAt: 0,
+
         init() {
             this.draftKey = `telc_attempt_${this.attemptId}_part_${this.partId}_draft`;
             this.options.forEach((option) => {
@@ -39,6 +45,7 @@ window.sprachPoolEngine = function sprachPoolEngine(config) {
             this.updateTimerLabel();
             this.startTimer();
             this.updateCompletionIndicators();
+            this.activeGapId = Number(this.gaps?.[0]?.id || 0);
         },
 
         bindTabNavigation() {
@@ -346,6 +353,186 @@ window.sprachPoolEngine = function sprachPoolEngine(config) {
             } catch (_) {
                 return 0;
             }
+        },
+
+        openPoolPicker(gapId) {
+            this.activeGapId = Number(gapId);
+            this.selectedGapId = Number(gapId);
+            this.poolPickerOpen = true;
+            document.body.classList.add('overflow-hidden');
+        },
+
+        closePoolPicker() {
+            this.poolPickerOpen = false;
+            document.body.classList.remove('overflow-hidden');
+        },
+
+        activeGap() {
+            return (this.gaps || []).find((g) => Number(g.id) === Number(this.activeGapId)) || null;
+        },
+
+        activeGapLabel() {
+            return this.activeGap()?.label || '';
+        },
+
+        isOptionUsed(optionId) {
+            return Object.values(this.assignments || {}).some((value) => Number(value) === Number(optionId));
+        },
+
+        isOptionAssignedToActiveGap(optionId) {
+            if (!this.activeGapId) return false;
+            return Number(this.assignments?.[this.activeGapId]) === Number(optionId);
+        },
+
+        assignFromPoolPicker(optionId) {
+            if (!this.activeGapId) return;
+
+            if (this.isOptionUsed(optionId) && !this.isOptionAssignedToActiveGap(optionId)) {
+                return;
+            }
+
+            this.assignments[this.activeGapId] = Number(optionId);
+            this.statusMessage = 'Autospeichern...';
+            this.queueAutosave();
+            this.updateCompletionIndicators();
+
+            const currentGapId = Number(this.activeGapId);
+            this.lastPickedGapId = currentGapId;
+            this.lastPickedAt = Date.now();
+
+            setTimeout(() => {
+                this.closePoolPicker();
+                this.goToNextUnansweredFrom(currentGapId);
+            }, 160);
+        },
+
+        clearActivePoolAssignment() {
+            if (!this.activeGapId) return;
+
+            this.assignments[this.activeGapId] = null;
+            this.statusMessage = 'Autospeichern...';
+            this.queueAutosave();
+            this.updateCompletionIndicators();
+            this.closePoolPicker();
+        },
+
+        answeredCount() {
+            return Object.values(this.assignments || {}).filter((v) => v !== null && v !== '').length;
+        },
+
+        navigatorButtonClass(gapId) {
+            if (Number(this.activeGapId) === Number(gapId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.assignments?.[gapId]) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToGap(gapId) {
+            this.activeGapId = Number(gapId);
+            const el = document.getElementById(`pool-gap-${gapId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        },
+
+        goToNextUnanswered() {
+            const firstUnanswered = (this.gaps || []).find((g) => !this.assignments?.[g.id]);
+            if (firstUnanswered) {
+                this.scrollToGap(firstUnanswered.id);
+                return;
+            }
+
+            if (this.gaps?.length) {
+                this.scrollToGap(this.gaps[0].id);
+            }
+        },
+
+        goToNextUnansweredFrom(gapId) {
+            const ids = (this.gaps || []).map((g) => Number(g.id));
+            const currentIndex = ids.indexOf(Number(gapId));
+
+            if (currentIndex === -1) return;
+
+            for (let i = currentIndex + 1; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.assignments?.[id]) {
+                    this.scrollToGap(id);
+                    return;
+                }
+            }
+
+            for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.assignments?.[id]) {
+                    this.scrollToGap(id);
+                    return;
+                }
+            }
+        },
+
+        wasJustPicked(gapId) {
+            return Number(this.lastPickedGapId) === Number(gapId) && (Date.now() - this.lastPickedAt < 900);
+        },
+
+        mobileGapChipClass(gapId) {
+            if (this.wasJustPicked(gapId)) {
+                return 'border-emerald-500 bg-emerald-500 ring-4 ring-emerald-300';
+            }
+
+            if (Number(this.activeGapId) === Number(gapId)) {
+                return 'border-blue-500 bg-blue-600';
+            }
+
+            if (this.assignments?.[gapId]) {
+                return 'border-[#3d5f8a] bg-[#3d5f8a]';
+            }
+
+            return 'border-[#3d5f8a] bg-[#3d5f8a]';
+        },
+
+        poolOptionNavigatorClass(optionId) {
+            if (Number(this.activePoolOptionPreviewId) === Number(optionId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.isOptionAssignedToActiveGap(optionId)) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            if (this.isOptionUsed(optionId)) {
+                return 'border-slate-300 bg-slate-100 text-slate-400';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToPoolOption(optionId) {
+            this.activePoolOptionPreviewId = Number(optionId);
+            const el = document.getElementById(`pool-option-${optionId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        mobilePoolOptionClass(optionId) {
+            if (this.isOptionAssignedToActiveGap(optionId)) {
+                return 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-300';
+            }
+
+            if (Number(this.activePoolOptionPreviewId) === Number(optionId)) {
+                return 'border-blue-300 ring-2 ring-blue-200';
+            }
+
+            if (this.isOptionUsed(optionId)) {
+                return 'border-slate-200 bg-slate-100 text-slate-400 opacity-55';
+            }
+
+            return 'border-indigo-300 bg-[#b5b8ff]';
         },
     };
 };
