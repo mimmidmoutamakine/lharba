@@ -1951,3 +1951,7 @@
         padding: 1.35rem;
     }
 }
+
+.mobile-question-nav::-webkit-scrollbar {
+    display: none;
+}

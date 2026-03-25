@@ -14,6 +14,7 @@ window.readingMcqEngine = function readingMcqEngine(config) {
         isSubmitting: false,
         draftKey: null,
         passageSheetOpen: false,
+        activeQuestionId: null,
 
         openPassageSheet() {
             this.passageSheetOpen = true;
@@ -299,6 +300,81 @@ window.readingMcqEngine = function readingMcqEngine(config) {
             } catch (_) {
                 return 0;
             }
+        },
+
+        navigatorButtonClass(questionId) {
+            if (Number(this.activeQuestionId) === Number(questionId)) {
+                return 'border-blue-500 bg-blue-600 text-white';
+            }
+
+            if (this.choices?.[questionId]) {
+                return 'border-emerald-400 bg-emerald-100 text-emerald-700';
+            }
+
+            return 'border-slate-300 bg-white text-slate-700';
+        },
+
+        scrollToQuestion(questionId) {
+            this.activeQuestionId = questionId;
+
+            const el = document.getElementById(`question-${questionId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        chooseAndAdvance(questionId, optionId) {
+            this.activeQuestionId = questionId;
+            this.choose(questionId, optionId);
+
+            setTimeout(() => {
+                this.goToNextUnansweredFrom(questionId);
+            }, 120);
+        },
+
+        goToNextUnansweredFrom(questionId) {
+            const ids = this.questionIds.map(Number);
+            const currentIndex = ids.indexOf(Number(questionId));
+
+            if (currentIndex === -1) return;
+
+            for (let i = currentIndex + 1; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.choices?.[id]) {
+                    this.scrollToQuestion(id);
+                    return;
+                }
+            }
+
+            for (let i = 0; i < ids.length; i++) {
+                const id = ids[i];
+                if (!this.choices?.[id]) {
+                    this.scrollToQuestion(id);
+                    return;
+                }
+            }
+        },
+
+        mobileQuestionCardClass(questionId) {
+            if (Number(this.activeQuestionId) === Number(questionId)) {
+                return 'border-blue-300 ring-2 ring-blue-200';
+            }
+
+            if (this.choices?.[questionId]) {
+                return 'border-emerald-300 ring-1 ring-emerald-200';
+            }
+
+            return 'border-slate-300';
+        },
+
+        mobileOptionClass(questionId, optionId) {
+            const current = Number(this.choices?.[questionId] || 0);
+
+            if (current === Number(optionId)) {
+                return 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-300';
+            }
+
+            return 'border-slate-300 bg-white';
         },
     };
 };
