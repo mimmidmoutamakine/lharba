@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Models\UserExamAccess;
+use App\Models\UserExamRequest;
 
 class UserRouteResolver
 {
@@ -16,14 +18,24 @@ class UserRouteResolver
             return 'admin.exams.index';
         }
 
-        if (! $user->isApproved()) {
+        $hasActiveAccess = UserExamAccess::query()
+            ->where('user_id', $user->id)
+            ->where('status', UserExamAccess::STATUS_ACTIVE)
+            ->exists();
+
+        if ($hasActiveAccess) {
+            return 'dashboard';
+        }
+
+        $hasPendingRequest = UserExamRequest::query()
+            ->where('user_id', $user->id)
+            ->where('status', UserExamRequest::STATUS_PENDING)
+            ->exists();
+
+        if ($hasPendingRequest) {
             return 'approval.pending';
         }
 
-        if ($user->needsOnboarding()) {
-            return 'setup.show';
-        }
-
-        return 'dashboard';
+        return 'setup.show';
     }
 }

@@ -21,7 +21,7 @@ class SprachGapQuestion extends Model
 
     public function options(): HasMany
     {
-        return $this->hasMany(SprachGapOption::class)->orderBy('sort_order');
+        return $this->hasMany(SprachGapOption::class, 'sprach_gap_question_id')->orderBy('sort_order');
     }
 }
 

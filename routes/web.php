@@ -37,10 +37,8 @@ Route::get('/dashboard', [LearningHubController::class, 'dashboard'])
 Route::middleware('auth')->group(function () {
     Route::get('/approval/pending', [ApprovalStatusController::class, 'show'])->name('approval.pending');
 
-    Route::middleware('approved')->group(function () {
-        Route::get('/setup', [OnboardingController::class, 'show'])->name('setup.show');
-        Route::post('/setup', [OnboardingController::class, 'store'])->name('setup.store');
-    });
+    Route::get('/setup', [OnboardingController::class, 'show'])->name('setup.show');
+    Route::post('/setup', [OnboardingController::class, 'store'])->name('setup.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -80,8 +78,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
         Route::get('/', fn () => redirect()->route('admin.exams.index'))->name('index');
         Route::get('/approvals', [\App\Http\Controllers\Admin\UserApprovalController::class, 'index'])->name('approvals.index');
-        Route::post('/approvals/{user}/approve', [\App\Http\Controllers\Admin\UserApprovalController::class, 'approve'])->name('approvals.approve');
-        Route::post('/approvals/{user}/reject', [\App\Http\Controllers\Admin\UserApprovalController::class, 'reject'])->name('approvals.reject');
+        Route::post('/approvals/{approval}/approve', [\App\Http\Controllers\Admin\UserApprovalController::class, 'approve'])->name('approvals.approve');
+        Route::post('/approvals/{approval}/reject', [\App\Http\Controllers\Admin\UserApprovalController::class, 'reject'])->name('approvals.reject');
         Route::post('/exams/import-csv', [ExamController::class, 'importCsv'])->name('exams.import-csv');
         Route::get('/exams/import-template', [ExamController::class, 'downloadCsvTemplate'])->name('exams.import-template');
         Route::post('/exams/import-package', [ExamController::class, 'importPackage'])->name('exams.import-package');

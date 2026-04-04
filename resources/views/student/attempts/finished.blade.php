@@ -11,8 +11,8 @@
         <section class="w-full max-w-[1280px] border border-slate-400 bg-[#35557f] px-8 py-10 text-center text-white shadow-2xl">
             <div class="mx-auto flex h-28 w-28 items-center justify-center rounded bg-[#d81d2a] text-center text-white">
                 <div>
-                    <div class="text-5xl font-bold leading-none">telc</div>
-                    <div class="text-[10px] tracking-wide">LANGUAGE TESTS</div>
+                    <div class="text-5xl font-bold leading-none">Lharba</div>
+                    <div class="text-[10px] tracking-wide">liman istata3</div>
                 </div>
             </div>
 

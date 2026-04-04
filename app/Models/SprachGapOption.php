@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SprachGapOption extends Model
 {
+    protected $table = 'sprach_gap_options';
+
     protected $fillable = [
         'sprach_gap_question_id',
         'option_key',
@@ -27,4 +29,3 @@ class SprachGapOption extends Model
         return $this->belongsTo(SprachGapQuestion::class, 'sprach_gap_question_id');
     }
 }
-

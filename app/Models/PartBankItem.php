@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PartBankItem extends Model
 {
@@ -34,5 +35,9 @@ class PartBankItem extends Model
     {
         return $query->where('is_active', true);
     }
-}
 
+    public function examPartEntries(): HasMany
+    {
+        return $this->hasMany(ExamPartEntry::class, 'legacy_part_bank_item_id');
+    }
+}

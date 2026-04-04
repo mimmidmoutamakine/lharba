@@ -28,83 +28,66 @@ class PartBankController extends Controller
     public function importLesenTeil1(Request $request): RedirectResponse
     {
         $validated = Validator::make($request->all(), [
-            'csv_file' => ['required', 'file', 'mimes:csv,txt'],
+            'csv_file' => ['required', 'file', 'mimetypes:application/json,text/plain'],
             'level' => ['nullable', 'string', 'max:10'],
             'points' => ['nullable', 'integer', 'min:0', 'max:200'],
             'instruction_text' => ['nullable', 'string'],
         ])->validate();
 
-        $rows = $this->parseRowsByPosition($validated['csv_file']->getRealPath());
-        if ($rows === []) {
+        $entries = $this->parseJsonEntries($validated['csv_file']->getRealPath());
+        if ($entries === []) {
             throw ValidationException::withMessages([
-                'csv_file' => 'No data rows found in CSV.',
+                'csv_file' => 'No valid entries found in JSON.',
             ]);
         }
 
         $created = 0;
         $updated = 0;
         $skipped = 0;
-        $skippedLines = [];
-        foreach ($rows as $index => $columns) {
-            if (count($columns) < 21) {
-                $skipped++;
-                $skippedLines[] = (string) $index;
-                continue;
-            }
 
-            $sourceLabel = trim((string) ($columns[0] ?? ''));
+        foreach ($entries as $entry) {
+            $content = (array) ($entry['content'] ?? []);
+            $sourceLabel = trim((string) ($entry['examTitle'] ?? $content['textTitle'] ?? $entry['examId'] ?? ''));
+
             if ($sourceLabel === '') {
                 $skipped++;
-                $skippedLines[] = (string) $index;
                 continue;
             }
 
-            $optionKeys = ['A','B','C','D','E','F','G','H','I','J'];
-            $options = [];
-            foreach ($optionKeys as $i => $key) {
-                $options[] = [
-                    'option_key' => $key,
-                    'option_text' => trim((string) ($columns[$i + 1] ?? '')),
+            $headlines = collect((array) ($content['headlines'] ?? []))
+                ->map(fn ($row, $i) => [
+                    'option_key' => strtoupper((string) ($row['id'] ?? chr(97 + $i))),
+                    'option_text' => (string) ($row['text'] ?? ''),
                     'sort_order' => $i + 1,
-                ];
-            }
+                ])
+                ->values()
+                ->all();
 
-            $texts = [];
-            for ($i = 0; $i < 5; $i++) {
-                $texts[] = [
-                    'label' => (string) ($i + 1),
-                    'body_text' => trim((string) ($columns[$i + 11] ?? '')),
+            $texts = collect((array) ($content['texts'] ?? []))
+                ->map(fn ($row, $i) => [
+                    'label' => (string) ($row['id'] ?? ($i + 1)),
+                    'body_text' => (string) ($row['content'] ?? $row['text'] ?? ''),
+                    'summary' => (string) ($row['summary'] ?? ''),
+                    'highlights' => (array) ($row['highlights'] ?? []),
                     'sort_order' => $i + 1,
+                ])
+                ->values()
+                ->all();
+
+            $correctAnswers = [];
+            foreach ((array) ($content['correctAnswers'] ?? []) as $textLabel => $headlineLabel) {
+                $correctAnswers[] = [
+                    'text_label' => (string) $textLabel,
+                    'option_key' => strtoupper((string) $headlineLabel),
                 ];
             }
 
-            $answers = [];
-            for ($i = 0; $i < 5; $i++) {
-                $answerKey = strtoupper(trim((string) ($columns[$i + 16] ?? '')));
-                if ($answerKey === '' || ! in_array($answerKey, $optionKeys, true)) {
-                    continue;
-                }
-                $answers[] = [
-                    'text_label' => (string) ($i + 1),
-                    'option_key' => $answerKey,
-                ];
+            if ($headlines === [] || $texts === [] || $correctAnswers === []) {
+                $skipped++;
+                continue;
             }
 
-            $level = strtolower((string) ($validated['level'] ?? 'b2'));
-            $duplicateSet = PartBankItem::query()
-                ->where('source_label', $sourceLabel)
-                ->where('level', $level)
-                ->where('section_type', ExamSection::TYPE_LESEN)
-                ->where('part_type', ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS)
-                ->orderBy('id')
-                ->get();
-
-            $existing = $duplicateSet->first();
-            if ($duplicateSet->count() > 1) {
-                PartBankItem::query()
-                    ->whereIn('id', $duplicateSet->slice(1)->pluck('id')->all())
-                    ->delete();
-            }
+            $level = strtolower((string) ($validated['level'] ?? $entry['level'] ?? 'b2'));
 
             $payload = [
                 'title' => 'Lesen Teil 1 - '.$sourceLabel,
@@ -114,133 +97,98 @@ class PartBankController extends Controller
                 'part_type' => ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
                 'part_title' => 'Teil 1',
                 'instruction_text' => (string) ($validated['instruction_text'] ?? 'Lesen Sie die Uberschriften a-j und die Texte 1-5 und entscheiden Sie, welche Uberschrift am besten zu welchem Text passt.'),
-                'points' => (int) ($validated['points'] ?? 25),
+                'points' => (int) ($validated['points'] ?? $entry['maxPoints'] ?? 25),
                 'content_json' => [
                     'texts' => $texts,
-                    'options' => $options,
-                    'correct_answers' => $answers,
+                    'options' => $headlines,
+                    'correct_answers' => $correctAnswers,
                 ],
-                'config_json' => null,
+                'config_json' => [
+                    'import_source' => 'json',
+                    'external_exam_id' => $entry['examId'] ?? null,
+                    'external_part_id' => $entry['partId'] ?? null,
+                    'visibility' => $entry['visibility'] ?? null,
+                    'pro' => $entry['pro'] ?? null,
+                    'weight' => $entry['weight'] ?? null,
+                    'arabic_title' => $entry['arabic_title'] ?? null,
+                ],
                 'is_active' => true,
             ];
 
-            if ($existing) {
-                $existing->update($payload);
-                $item = $existing->refresh();
-            } else {
-                $item = PartBankItem::query()->create($payload);
-            }
+            $item = PartBankItem::query()->updateOrCreate(
+                [
+                    'source_label' => $sourceLabel,
+                    'level' => $level,
+                    'section_type' => ExamSection::TYPE_LESEN,
+                    'part_type' => ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
+                ],
+                $payload
+            );
 
-            if ($item->wasRecentlyCreated) {
-                $created++;
-            } else {
-                $updated++;
-            }
-        }
-
-        $message = "Teil bank import complete. Created {$created}, updated {$updated}, skipped {$skipped}.";
-        if ($skipped > 0) {
-            $message .= ' Skipped rows: '.implode(', ', array_slice($skippedLines, 0, 20)).(count($skippedLines) > 20 ? ', ...' : '').'.';
+            $item->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         return redirect()
             ->route('admin.part-bank.index')
-            ->with('status', $message);
+            ->with('status', "Lesen Teil 1 JSON import complete. Created {$created}, updated {$updated}, skipped {$skipped}.");
     }
 
     public function importLesenTeil2(Request $request): RedirectResponse
     {
         $validated = Validator::make($request->all(), [
-            'csv_file' => ['required', 'file', 'mimes:csv,txt'],
+            'csv_file' => ['required', 'file', 'mimetypes:application/json,text/plain'],
             'level' => ['nullable', 'string', 'max:10'],
             'points' => ['nullable', 'integer', 'min:0', 'max:200'],
             'instruction_text' => ['nullable', 'string'],
         ])->validate();
 
-        $rows = $this->parseRowsByPosition($validated['csv_file']->getRealPath());
-        if ($rows === []) {
+        $entries = $this->parseJsonEntries($validated['csv_file']->getRealPath());
+        if ($entries === []) {
             throw ValidationException::withMessages([
-                'csv_file' => 'No data rows found in CSV.',
+                'csv_file' => 'No valid entries found in JSON.',
             ]);
         }
 
         $created = 0;
         $updated = 0;
         $skipped = 0;
-        $skippedLines = [];
 
-        foreach ($rows as $index => $columns) {
-            if (count($columns) < 28) {
+        foreach ($entries as $entry) {
+            $content = (array) ($entry['content'] ?? []);
+            $sourceLabel = trim((string) ($entry['examTitle'] ?? $content['textTitle'] ?? $entry['examId'] ?? ''));
+
+            if ($sourceLabel === '' || empty($content['textContent'])) {
                 $skipped++;
-                $skippedLines[] = (string) $index;
                 continue;
             }
 
-            $sourceLabel = trim((string) ($columns[0] ?? ''));
-            $passageTitle = trim((string) ($columns[1] ?? ''));
-            $passageText = trim((string) ($columns[2] ?? ''));
-            if ($sourceLabel === '' || $passageText === '') {
+            $questions = collect((array) ($content['questions'] ?? []))
+                ->map(function ($row, $i) {
+                    $options = collect((array) ($row['options'] ?? []))
+                        ->values()
+                        ->map(fn ($optionText, $idx) => [
+                            'option_key' => chr(65 + $idx),
+                            'option_text' => (string) $optionText,
+                            'is_correct' => ((int) ($row['correct'] ?? -1) === $idx),
+                            'sort_order' => $idx + 1,
+                        ])
+                        ->all();
+
+                    return [
+                        'question_text' => (string) ($row['text'] ?? ''),
+                        'sort_order' => $i + 1,
+                        'options' => $options,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            if ($questions === []) {
                 $skipped++;
-                $skippedLines[] = (string) $index;
                 continue;
             }
 
-            $questions = [];
-            for ($i = 1; $i <= 5; $i++) {
-                $base = 3 + (($i - 1) * 4);
-                $questionText = trim((string) ($columns[$base] ?? ''));
-                $optionA = trim((string) ($columns[$base + 1] ?? ''));
-                $optionB = trim((string) ($columns[$base + 2] ?? ''));
-                $optionC = trim((string) ($columns[$base + 3] ?? ''));
-                $correctKey = strtoupper(trim((string) ($columns[23 + ($i - 1)] ?? '')));
-
-                if ($questionText === '' || $optionA === '' || $optionB === '' || $optionC === '') {
-                    $skipped++;
-                    $skippedLines[] = (string) $index;
-                    continue 2;
-                }
-
-                $questions[] = [
-                    'question_text' => $questionText,
-                    'sort_order' => $i,
-                    'options' => [
-                        [
-                            'option_key' => 'A',
-                            'option_text' => $optionA,
-                            'is_correct' => $correctKey === 'A',
-                            'sort_order' => 1,
-                        ],
-                        [
-                            'option_key' => 'B',
-                            'option_text' => $optionB,
-                            'is_correct' => $correctKey === 'B',
-                            'sort_order' => 2,
-                        ],
-                        [
-                            'option_key' => 'C',
-                            'option_text' => $optionC,
-                            'is_correct' => $correctKey === 'C',
-                            'sort_order' => 3,
-                        ],
-                    ],
-                ];
-            }
-
-            $level = strtolower((string) ($validated['level'] ?? 'b2'));
-            $duplicateSet = PartBankItem::query()
-                ->where('source_label', $sourceLabel)
-                ->where('level', $level)
-                ->where('section_type', ExamSection::TYPE_LESEN)
-                ->where('part_type', ExamPart::TYPE_READING_TEXT_MCQ)
-                ->orderBy('id')
-                ->get();
-
-            $existing = $duplicateSet->first();
-            if ($duplicateSet->count() > 1) {
-                PartBankItem::query()
-                    ->whereIn('id', $duplicateSet->slice(1)->pluck('id')->all())
-                    ->delete();
-            }
+            $level = strtolower((string) ($validated['level'] ?? $entry['level'] ?? 'b2'));
 
             $payload = [
                 'title' => 'Lesen Teil 2 - '.$sourceLabel,
@@ -250,144 +198,107 @@ class PartBankController extends Controller
                 'part_type' => ExamPart::TYPE_READING_TEXT_MCQ,
                 'part_title' => 'Teil 2',
                 'instruction_text' => (string) ($validated['instruction_text'] ?? 'Lesen Sie den Text und die Aufgaben. Entscheiden Sie anhand des Textes, welche Losung richtig ist.'),
-                'points' => (int) ($validated['points'] ?? 25),
+                'points' => (int) ($validated['points'] ?? $entry['maxPoints'] ?? 25),
                 'content_json' => [
                     'passage' => [
-                        'title' => $passageTitle !== '' ? $passageTitle : $sourceLabel,
-                        'body_text' => $passageText,
+                        'title' => (string) ($content['textTitle'] ?? ''),
+                        'body_text' => (string) ($content['textContent'] ?? ''),
                         'sort_order' => 1,
                     ],
                     'questions' => $questions,
                 ],
-                'config_json' => null,
+                'config_json' => [
+                    'import_source' => 'json',
+                    'external_exam_id' => $entry['examId'] ?? null,
+                    'external_part_id' => $entry['partId'] ?? null,
+                    'visibility' => $entry['visibility'] ?? null,
+                    'pro' => $entry['pro'] ?? null,
+                    'weight' => $entry['weight'] ?? null,
+                    'arabic_title' => $entry['arabic_title'] ?? null,
+                ],
                 'is_active' => true,
             ];
 
-            if ($existing) {
-                $existing->update($payload);
-                $item = $existing->refresh();
-            } else {
-                $item = PartBankItem::query()->create($payload);
-            }
+            $item = PartBankItem::query()->updateOrCreate(
+                [
+                    'source_label' => $sourceLabel,
+                    'level' => $level,
+                    'section_type' => ExamSection::TYPE_LESEN,
+                    'part_type' => ExamPart::TYPE_READING_TEXT_MCQ,
+                ],
+                $payload
+            );
 
-            if ($item->wasRecentlyCreated) {
-                $created++;
-            } else {
-                $updated++;
-            }
-        }
-
-        $message = "Lesen Teil 2 import complete. Created {$created}, updated {$updated}, skipped {$skipped}.";
-        if ($skipped > 0) {
-            $message .= ' Skipped rows: '.implode(', ', array_slice($skippedLines, 0, 20)).(count($skippedLines) > 20 ? ', ...' : '').'.';
+            $item->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         return redirect()
             ->route('admin.part-bank.index')
-            ->with('status', $message);
+            ->with('status', "Lesen Teil 2 JSON import complete. Created {$created}, updated {$updated}, skipped {$skipped}.");
     }
 
     public function importLesenTeil3(Request $request): RedirectResponse
     {
         $validated = Validator::make($request->all(), [
-            'csv_file' => ['required', 'file', 'mimes:csv,txt'],
+            'csv_file' => ['required', 'file', 'mimetypes:application/json,text/plain'],
             'level' => ['nullable', 'string', 'max:10'],
             'points' => ['nullable', 'integer', 'min:0', 'max:200'],
             'instruction_text' => ['nullable', 'string'],
         ])->validate();
 
-        $rows = $this->parseRowsByPosition($validated['csv_file']->getRealPath());
-        if ($rows === []) {
+        $entries = $this->parseJsonEntries($validated['csv_file']->getRealPath());
+        if ($entries === []) {
             throw ValidationException::withMessages([
-                'csv_file' => 'No data rows found in CSV.',
+                'csv_file' => 'No valid entries found in JSON.',
             ]);
         }
 
         $created = 0;
         $updated = 0;
         $skipped = 0;
-        $skippedLines = [];
-        $adLabels = range('A', 'L');
 
-        foreach ($rows as $index => $columns) {
-            if (count($columns) < 45) {
-                $skipped++;
-                $skippedLines[] = (string) $index;
-                continue;
-            }
+        foreach ($entries as $entry) {
+            $content = (array) ($entry['content'] ?? []);
+            $sourceLabel = trim((string) ($entry['examTitle'] ?? $content['textTitle'] ?? $entry['examId'] ?? ''));
 
-            $sourceLabel = trim((string) ($columns[0] ?? ''));
             if ($sourceLabel === '') {
                 $skipped++;
-                $skippedLines[] = (string) $index;
                 continue;
             }
 
-            $situations = [];
-            for ($i = 1; $i <= 10; $i++) {
-                $text = trim((string) ($columns[$i] ?? ''));
-                if ($text === '') {
-                    $skipped++;
-                    $skippedLines[] = (string) $index;
-                    continue 2;
-                }
+            $ads = collect((array) ($content['ads'] ?? []))
+                ->map(fn ($row, $i) => [
+                    'label' => strtoupper((string) ($row['id'] ?? chr(97 + $i))),
+                    'title' => (string) ($row['title'] ?? ''),
+                    'body_text' => (string) ($row['text'] ?? ''),
+                    'sort_order' => $i + 1,
+                ])
+                ->values()
+                ->all();
 
-                $situations[] = [
-                    'label' => (string) $i,
-                    'situation_text' => $text,
-                    'sort_order' => $i,
-                ];
-            }
-
-            $ads = [];
-            foreach ($adLabels as $adIndex => $label) {
-                $base = 11 + ($adIndex * 2);
-                $adTitle = trim((string) ($columns[$base] ?? ''));
-                $adText = trim((string) ($columns[$base + 1] ?? ''));
-                if ($adTitle === '' || $adText === '') {
-                    $skipped++;
-                    $skippedLines[] = (string) $index;
-                    continue 2;
-                }
-
-                $ads[] = [
-                    'label' => $label,
-                    'title' => $adTitle,
-                    'body_text' => $adText,
-                    'sort_order' => $adIndex + 1,
-                ];
-            }
+            $situations = collect((array) ($content['situations'] ?? []))
+                ->map(fn ($row, $i) => [
+                    'label' => (string) ($row['id'] ?? ($i + 1)),
+                    'situation_text' => (string) ($row['text'] ?? ''),
+                    'sort_order' => $i + 1,
+                ])
+                ->values()
+                ->all();
 
             $correctAnswers = [];
-            for ($i = 1; $i <= 10; $i++) {
-                $raw = strtoupper(trim((string) ($columns[34 + $i] ?? '')));
-                if ($raw === '' || ($raw !== 'X' && ! in_array($raw, $adLabels, true))) {
-                    $skipped++;
-                    $skippedLines[] = (string) $index;
-                    continue 2;
-                }
-
+            foreach ((array) ($content['correctAnswers'] ?? []) as $situationLabel => $adLabel) {
                 $correctAnswers[] = [
-                    'situation_label' => (string) $i,
-                    'correct_ad_label' => $raw,
+                    'situation_label' => (string) $situationLabel,
+                    'correct_ad_label' => strtoupper((string) $adLabel),
                 ];
             }
 
-            $level = strtolower((string) ($validated['level'] ?? 'b2'));
-            $duplicateSet = PartBankItem::query()
-                ->where('source_label', $sourceLabel)
-                ->where('level', $level)
-                ->where('section_type', ExamSection::TYPE_LESEN)
-                ->where('part_type', ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X)
-                ->orderBy('id')
-                ->get();
-
-            $existing = $duplicateSet->first();
-            if ($duplicateSet->count() > 1) {
-                PartBankItem::query()
-                    ->whereIn('id', $duplicateSet->slice(1)->pluck('id')->all())
-                    ->delete();
+            if ($ads === [] || $situations === [] || $correctAnswers === []) {
+                $skipped++;
+                continue;
             }
+
+            $level = strtolower((string) ($validated['level'] ?? $entry['level'] ?? 'b2'));
 
             $payload = [
                 'title' => 'Lesen Teil 3 - '.$sourceLabel,
@@ -397,154 +308,118 @@ class PartBankController extends Controller
                 'part_type' => ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X,
                 'part_title' => 'Teil 3',
                 'instruction_text' => (string) ($validated['instruction_text'] ?? 'Lesen Sie die zehn Situationen (1-10) und die zwolf Texte (a-l). Welcher Text passt zu welcher Situation? Sie konnen jeden Text nur einmal verwenden. Manchmal passt kein Text. Wahlen Sie dann X.'),
-                'points' => (int) ($validated['points'] ?? 25),
+                'points' => (int) ($validated['points'] ?? $entry['maxPoints'] ?? 25),
                 'content_json' => [
                     'ads' => $ads,
                     'situations' => $situations,
                     'correct_answers' => $correctAnswers,
                 ],
-                'config_json' => null,
+                'config_json' => [
+                    'import_source' => 'json',
+                    'external_exam_id' => $entry['examId'] ?? null,
+                    'external_part_id' => $entry['partId'] ?? null,
+                    'visibility' => $entry['visibility'] ?? null,
+                    'pro' => $entry['pro'] ?? null,
+                    'weight' => $entry['weight'] ?? null,
+                    'arabic_title' => $entry['arabic_title'] ?? null,
+                ],
                 'is_active' => true,
             ];
 
-            if ($existing) {
-                $existing->update($payload);
-                $item = $existing->refresh();
-            } else {
-                $item = PartBankItem::query()->create($payload);
-            }
+            $item = PartBankItem::query()->updateOrCreate(
+                [
+                    'source_label' => $sourceLabel,
+                    'level' => $level,
+                    'section_type' => ExamSection::TYPE_LESEN,
+                    'part_type' => ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X,
+                ],
+                $payload
+            );
 
-            if ($item->wasRecentlyCreated) {
-                $created++;
-            } else {
-                $updated++;
-            }
-        }
-
-        $message = "Lesen Teil 3 import complete. Created {$created}, updated {$updated}, skipped {$skipped}.";
-        if ($skipped > 0) {
-            $message .= ' Skipped rows: '.implode(', ', array_slice($skippedLines, 0, 20)).(count($skippedLines) > 20 ? ', ...' : '').'.';
+            $item->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         return redirect()
             ->route('admin.part-bank.index')
-            ->with('status', $message);
+            ->with('status', "Lesen Teil 3 JSON import complete. Created {$created}, updated {$updated}, skipped {$skipped}.");
     }
 
     public function importSprachbausteineTeil1(Request $request): RedirectResponse
     {
         $validated = Validator::make($request->all(), [
-            'csv_file' => ['required', 'file', 'mimes:csv,txt'],
+            'csv_file' => ['required', 'file', 'mimetypes:application/json,text/plain'],
             'level' => ['nullable', 'string', 'max:10'],
             'points' => ['nullable', 'integer', 'min:0', 'max:200'],
             'instruction_text' => ['nullable', 'string'],
         ])->validate();
 
-        $rows = $this->parseRowsWithHeaders($validated['csv_file']->getRealPath());
-        if ($rows === []) {
+        $entries = $this->parseJsonEntries($validated['csv_file']->getRealPath());
+        if ($entries === []) {
             throw ValidationException::withMessages([
-                'csv_file' => 'No data rows found in CSV.',
-            ]);
-        }
-
-        $requiredHeaders = ['source_label', 'passage_title', 'passage_text', 'gap_number', 'a', 'b', 'c', 'correct'];
-        if (array_diff($requiredHeaders, array_keys($rows[0]))) {
-            throw ValidationException::withMessages([
-                'csv_file' => 'Invalid headers. Expected: '.implode(', ', $requiredHeaders),
-            ]);
-        }
-
-        $grouped = [];
-        foreach ($rows as $row) {
-            $sourceLabel = trim((string) ($row['source_label'] ?? ''));
-            if ($sourceLabel === '') {
-                continue;
-            }
-            $grouped[$sourceLabel][] = $row;
-        }
-
-        if ($grouped === []) {
-            throw ValidationException::withMessages([
-                'csv_file' => 'No valid source_label rows found.',
+                'csv_file' => 'No valid entries found in JSON.',
             ]);
         }
 
         $created = 0;
         $updated = 0;
         $skipped = 0;
-        $skippedLabels = [];
 
-        foreach ($grouped as $sourceLabel => $items) {
-            $first = $items[0];
-            $passageTitle = trim((string) ($first['passage_title'] ?? ''));
-            $passageText = trim((string) ($first['passage_text'] ?? ''));
-            if ($passageText === '') {
+        foreach ($entries as $entry) {
+            $content = (array) ($entry['content'] ?? []);
+            $segments = (array) ($content['segments'] ?? []);
+            $sourceLabel = trim((string) ($entry['examTitle'] ?? $content['textTitle'] ?? $entry['examId'] ?? ''));
+
+            if ($sourceLabel === '' || $segments === []) {
                 $skipped++;
-                $skippedLabels[] = $sourceLabel;
                 continue;
             }
 
-            $byGap = [];
-            foreach ($items as $item) {
-                $gap = (int) ($item['gap_number'] ?? 0);
-                if ($gap < 1 || $gap > 10) {
+            $bodyText = '';
+            $questions = [];
+            $gapNumber = 1;
+
+            foreach ($segments as $segment) {
+                if (is_string($segment)) {
+                    $bodyText .= $segment;
                     continue;
                 }
-                $byGap[$gap] = $item;
-            }
 
-            if (count($byGap) !== 10) {
-                $skipped++;
-                $skippedLabels[] = $sourceLabel;
-                continue;
-            }
-
-            $questions = [];
-            $invalid = false;
-            for ($gap = 1; $gap <= 10; $gap++) {
-                $row = $byGap[$gap];
-                $optionA = trim((string) ($row['a'] ?? ''));
-                $optionB = trim((string) ($row['b'] ?? ''));
-                $optionC = trim((string) ($row['c'] ?? ''));
-                $correct = strtoupper(trim((string) ($row['correct'] ?? '')));
-
-                if ($optionA === '' || $optionB === '' || $optionC === '' || ! in_array($correct, ['A', 'B', 'C'], true)) {
-                    $invalid = true;
-                    break;
+                if (! is_array($segment)) {
+                    continue;
                 }
 
+                $placeholder = '[['.$gapNumber.']]';
+                $bodyText .= $placeholder;
+
+                $options = collect((array) ($segment['options'] ?? []))
+                    ->values()
+                    ->map(function ($optionText, $idx) use ($segment) {
+                        $letter = chr(65 + $idx);
+                        return [
+                            'option_key' => $letter,
+                            'option_text' => (string) $optionText,
+                            'is_correct' => (string) $optionText === (string) ($segment['correct'] ?? ''),
+                            'sort_order' => $idx + 1,
+                        ];
+                    })
+                    ->all();
+
                 $questions[] = [
-                    'gap_number' => $gap,
-                    'sort_order' => $gap,
-                    'options' => [
-                        ['option_key' => 'A', 'option_text' => $optionA, 'is_correct' => $correct === 'A', 'sort_order' => 1],
-                        ['option_key' => 'B', 'option_text' => $optionB, 'is_correct' => $correct === 'B', 'sort_order' => 2],
-                        ['option_key' => 'C', 'option_text' => $optionC, 'is_correct' => $correct === 'C', 'sort_order' => 3],
-                    ],
+                    'gap_number' => $gapNumber,
+                    'sort_order' => $gapNumber,
+                    'explanation' => (string) ($segment['explanation'] ?? ''),
+                    'options' => $options,
                 ];
+
+                $gapNumber++;
             }
 
-            if ($invalid) {
+            if ($bodyText === '' || $questions === []) {
                 $skipped++;
-                $skippedLabels[] = $sourceLabel;
                 continue;
             }
 
-            $level = strtolower((string) ($validated['level'] ?? 'b2'));
-            $duplicateSet = PartBankItem::query()
-                ->where('source_label', $sourceLabel)
-                ->where('level', $level)
-                ->where('section_type', ExamSection::TYPE_SPRACHBAUSTEINE)
-                ->where('part_type', ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ)
-                ->orderBy('id')
-                ->get();
-
-            $existing = $duplicateSet->first();
-            if ($duplicateSet->count() > 1) {
-                PartBankItem::query()
-                    ->whereIn('id', $duplicateSet->slice(1)->pluck('id')->all())
-                    ->delete();
-            }
+            $level = strtolower((string) ($validated['level'] ?? $entry['level'] ?? 'b2'));
 
             $payload = [
                 'title' => 'Sprachbausteine Teil 1 - '.$sourceLabel,
@@ -553,44 +428,48 @@ class PartBankController extends Controller
                 'section_type' => ExamSection::TYPE_SPRACHBAUSTEINE,
                 'part_type' => ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ,
                 'part_title' => 'Teil 1',
-                'instruction_text' => (string) ($validated['instruction_text'] ?? 'Lesen Sie den Text und entscheiden Sie, welches Wort in die jeweilige Lucke passt.'),
-                'points' => (int) ($validated['points'] ?? 15),
+                'instruction_text' => (string) ($validated['instruction_text'] ?? 'Ergänzen Sie den Text. Entscheiden Sie, welche Lösung richtig ist.'),
+                'points' => (int) ($validated['points'] ?? $entry['maxPoints'] ?? 15),
                 'content_json' => [
                     'passage' => [
-                        'title' => $passageTitle,
-                        'body_text' => $passageText,
+                        'title' => (string) ($content['textTitle'] ?? ''),
+                        'body_text' => $bodyText,
+                        'note' => (string) ($content['note'] ?? ''),
                         'sort_order' => 1,
                     ],
                     'questions' => $questions,
+                    'modified_versions' => (array) ($content['modifiedVersions'] ?? []),
                 ],
-                'config_json' => null,
+                'config_json' => [
+                    'import_source' => 'json',
+                    'external_exam_id' => $entry['examId'] ?? null,
+                    'external_part_id' => $entry['partId'] ?? null,
+                    'visibility' => $entry['visibility'] ?? null,
+                    'pro' => $entry['pro'] ?? null,
+                    'weight' => $entry['weight'] ?? null,
+                    'arabic_title' => $entry['arabic_title'] ?? null,
+                ],
                 'is_active' => true,
             ];
 
-            if ($existing) {
-                $existing->update($payload);
-                $item = $existing->refresh();
-            } else {
-                $item = PartBankItem::query()->create($payload);
-            }
+            $item = PartBankItem::query()->updateOrCreate(
+                [
+                    'source_label' => $sourceLabel,
+                    'level' => $level,
+                    'section_type' => ExamSection::TYPE_SPRACHBAUSTEINE,
+                    'part_type' => ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ,
+                ],
+                $payload
+            );
 
-            if ($item->wasRecentlyCreated) {
-                $created++;
-            } else {
-                $updated++;
-            }
-        }
-
-        $message = "Sprachbausteine Teil 1 import complete. Created {$created}, updated {$updated}, skipped {$skipped}.";
-        if ($skipped > 0) {
-            $message .= ' Skipped labels: '.implode(', ', array_slice($skippedLabels, 0, 20)).(count($skippedLabels) > 20 ? ', ...' : '').'.';
+            $item->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         return redirect()
             ->route('admin.part-bank.index')
-            ->with('status', $message);
+            ->with('status', "Sprachbausteine Teil 1 JSON import complete. Created {$created}, updated {$updated}, skipped {$skipped}.");
     }
-
+    
     public function importSprachbausteineTeil2(Request $request): RedirectResponse
     {
         $validated = Validator::make($request->all(), [
@@ -1105,5 +984,23 @@ class PartBankController extends Controller
         }
 
         return $rows;
+    }
+
+    private function parseJsonEntries(string $path): array
+    {
+        $raw = file_get_contents($path);
+        if ($raw === false || trim($raw) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        $entries = $decoded['entries'] ?? null;
+
+        return is_array($entries) ? $entries : [];
     }
 }

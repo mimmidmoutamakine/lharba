@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\UserExamRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -20,12 +21,23 @@ class ApprovalStatusController extends Controller
             return redirect()->route('admin.exams.index');
         }
 
-        if ($user->isApproved()) {
-            return redirect()->route($user->needsOnboarding() ? 'setup.show' : 'dashboard');
+        $latestRequest = UserExamRequest::query()
+            ->with('examFamily')
+            ->where('user_id', $user->id)
+            ->latest('id')
+            ->first();
+
+        if (! $latestRequest) {
+            return redirect()->route('setup.show');
+        }
+
+        if ($latestRequest->status === UserExamRequest::STATUS_APPROVED) {
+            return redirect()->route('dashboard');
         }
 
         return view('student.approval.pending', [
             'user' => $user,
+            'latestRequest' => $latestRequest,
         ]);
     }
 }

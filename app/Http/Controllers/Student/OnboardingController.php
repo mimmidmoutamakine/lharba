@@ -4,34 +4,28 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\StoreOnboardingRequest;
+use App\Models\ExamFamily;
+use App\Models\UserExamAccess;
+use App\Models\UserExamRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
 {
+    public const EXAM_FAMILY_OPTIONS = [
+        'telc' => 'TELC',
+        'goethe' => 'Goethe',
+        'osd' => 'ÖSD',
+        'ecl' => 'ECL',
+    ];
+
     public const LEVEL_OPTIONS = [
+        'A1' => 'A1',
+        'A2' => 'A2',
         'B1' => 'B1',
         'B2' => 'B2',
-    ];
-
-    public const GOAL_OPTIONS = [
-        'daily_practice' => 'تمرين يومي منظم',
-        'exam_ready' => 'الاستعداد للامتحان',
-        'section_focus' => 'التركيز على أقسام معينة',
-        'speed_training' => 'تمرين سريع ومكثف',
-    ];
-
-    public const DAILY_MINUTE_OPTIONS = [15, 30, 45, 60, 90];
-
-    public const SECTION_OPTIONS = [
-        'lesen_t1' => 'القراءة - الجزء 1',
-        'lesen_t2' => 'القراءة - الجزء 2',
-        'lesen_t3' => 'القراءة - الجزء 3',
-        'sprach_t1' => 'اللغويات - الجزء 1',
-        'sprach_t2' => 'اللغويات - الجزء 2',
-        'hoeren_t1' => 'الاستماع - الجزء 1',
-        'hoeren_t2' => 'الاستماع - الجزء 2',
-        'schreiben_t1' => 'الكتابة - الجزء 1',
+        'C1' => 'C1',
+        'C2' => 'C2',
     ];
 
     public function show(): View|RedirectResponse
@@ -46,19 +40,26 @@ class OnboardingController extends Controller
             return redirect()->route('admin.exams.index');
         }
 
-        if (! $user->isApproved()) {
-            return redirect()->route('approval.pending');
-        }
+        $hasActiveAccess = UserExamAccess::query()
+            ->where('user_id', $user->id)
+            ->where('status', UserExamAccess::STATUS_ACTIVE)
+            ->exists();
 
-        if (! $user->needsOnboarding()) {
+        if ($hasActiveAccess) {
             return redirect()->route('dashboard');
         }
 
+        $latestPendingRequest = UserExamRequest::query()
+            ->with('examFamily')
+            ->where('user_id', $user->id)
+            ->where('status', UserExamRequest::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+
         return view('student.setup.show', [
+            'examFamilyOptions' => self::EXAM_FAMILY_OPTIONS,
             'levelOptions' => self::LEVEL_OPTIONS,
-            'goalOptions' => self::GOAL_OPTIONS,
-            'dailyMinuteOptions' => self::DAILY_MINUTE_OPTIONS,
-            'sectionOptions' => self::SECTION_OPTIONS,
+            'latestPendingRequest' => $latestPendingRequest,
         ]);
     }
 
@@ -66,20 +67,45 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->isApproved()) {
-            return redirect()->route('approval.pending');
+        $hasActiveAccess = UserExamAccess::query()
+            ->where('user_id', $user->id)
+            ->where('status', UserExamAccess::STATUS_ACTIVE)
+            ->exists();
+
+        if ($hasActiveAccess) {
+            return redirect()->route('dashboard');
         }
 
-        $user->forceFill([
-            'preferred_level' => $request->validated('preferred_level'),
-            'study_goal' => $request->validated('study_goal'),
-            'daily_minutes' => (int) $request->validated('daily_minutes'),
-            'focus_sections' => array_values($request->validated('focus_sections')),
-            'onboarding_completed_at' => now(),
-        ])->save();
+        $examFamilyId = ExamFamily::query()
+            ->where('code', $request->validated('exam_family'))
+            ->value('id');
+
+        abort_unless($examFamilyId, 422);
+
+        $latestPendingRequest = UserExamRequest::query()
+            ->where('user_id', $user->id)
+            ->where('status', UserExamRequest::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+
+        if ($latestPendingRequest) {
+            $latestPendingRequest->update([
+                'exam_family_id' => $examFamilyId,
+                'level' => $request->validated('preferred_level'),
+                'submitted_at' => now(),
+            ]);
+        } else {
+            UserExamRequest::create([
+                'user_id' => $user->id,
+                'exam_family_id' => $examFamilyId,
+                'level' => $request->validated('preferred_level'),
+                'status' => UserExamRequest::STATUS_PENDING,
+                'submitted_at' => now(),
+            ]);
+        }
 
         return redirect()
-            ->route('dashboard')
-            ->with('status', 'تم حفظ إعداداتك. مرحباً بك من جديد.');
+            ->route('approval.pending')
+            ->with('status', 'تم تحديث الطلب وإرساله للمراجعة.');
     }
 }

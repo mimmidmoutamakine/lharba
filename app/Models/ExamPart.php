@@ -23,17 +23,22 @@ class ExamPart extends Model
         'exam_section_id',
         'part_bank_item_id',
         'title',
+        'slug',
         'instruction_text',
         'part_type',
+        'schema_version',
+        'entry_mode',
         'points',
         'sort_order',
         'config_json',
+        'meta_json',
     ];
 
     protected function casts(): array
     {
         return [
             'config_json' => 'array',
+            'meta_json' => 'array',
         ];
     }
 
@@ -61,6 +66,11 @@ class ExamPart extends Model
     public function bankItem(): BelongsTo
     {
         return $this->belongsTo(PartBankItem::class, 'part_bank_item_id');
+    }
+
+    public function examPartEntries(): HasMany
+    {
+        return $this->hasMany(ExamPartEntry::class)->latest('id');
     }
 
     public function lesenMatchingTexts(): HasMany

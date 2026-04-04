@@ -22,20 +22,28 @@
 </div>
 
 <main class="mx-auto max-w-[1650px] px-3 py-3">
-    <div class="mb-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
-        Quiz review: grun = richtig, rot = falsch. Sie sehen hier genau dieselbe Aufgabe noch einmal, aber im Korrekturmodus.
-    </div>
-
     @if($part->part_type === \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS)
         @php
             $assignments = (array) ($answerJson['assignments'] ?? []);
             $optionsById = $part->lesenMatchingOptions->keyBy('id');
             $correctByTextId = $part->lesenMatchingAnswers->pluck('correct_option_id', 'lesen_matching_text_id');
             $correctOptionIds = $correctByTextId->values()->map(fn ($id) => (int) $id)->all();
+
+            $activeEntry = $part->examPartEntries->sortByDesc('id')->first();
+            $activeVersion = optional($activeEntry?->versions)->where('is_active', true)->sortByDesc('id')->first()
+                ?? optional($activeEntry?->versions)->sortByDesc('id')->first();
+
+            $textSummaryByLabel = collect($activeVersion?->blocks ?? [])
+                ->where('block_group', 'texts')
+                ->mapWithKeys(function ($block) {
+                    return [
+                        (string) ($block->label ?? '') => (string) data_get($block->extra_json, 'summary', ''),
+                    ];
+                });
         @endphp
-        <div class="grid gap-3 xl:grid-cols-[1fr_620px]">
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_520px] 2xl:grid-cols-[minmax(0,1fr)_620px]">
             <section class="space-y-4">
-                <x-exam.instruction-box :text="$part->instruction_text" />
+                {{-- <x-exam.instruction-box :text="$part->instruction_text" /> --}}
                 <div class="space-y-4">
                     @foreach($part->lesenMatchingTexts as $text)
                         @php
@@ -45,33 +53,69 @@
                             $givenOption = $optionsById->get($givenId);
                             $correctOption = $optionsById->get($correctId);
                         @endphp
-                        <article class="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
-                            <div class="mb-3 rounded-lg px-4 py-3 text-lg font-semibold {{ $givenId === 0 ? 'bg-slate-200 text-slate-600' : ($isCorrect ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') }}">
+                        <article class="rounded-2xl border border-slate-300 bg-white p-3 md:p-4 shadow-sm">
+                            <div class="mb-3 rounded-xl px-3 py-3 text-sm md:text-lg font-semibold leading-snug {{ $givenId === 0 ? 'bg-slate-200 text-slate-600' : ($isCorrect ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') }}">
                                 @if($givenId === 0)
                                     Keine Antwort
                                 @else
                                     Ihre Antwort: {{ $givenOption?->option_key }}. {{ $givenOption?->option_text }}
                                 @endif
                             </div>
+
                             @if(! $isCorrect)
-                                <div class="mb-3 rounded-lg bg-emerald-100 px-4 py-3 text-base font-semibold text-emerald-900">
+                                <div class="mb-3 rounded-xl bg-emerald-100 px-3 py-3 text-sm md:text-base font-semibold text-emerald-900 leading-snug">
                                     Richtig: {{ $correctOption?->option_key }}. {{ $correctOption?->option_text }}
                                 </div>
                             @endif
-                            <div class="text-lg leading-relaxed">{{ $text->body_text }}</div>
+
+                            <div class="rounded-xl bg-slate-50 px-3 py-3 md:px-4 md:py-4">
+                                <div class="text-[15px] md:text-lg leading-7 md:leading-relaxed text-slate-900">
+                                    {{ $text->body_text }}
+                                </div>
+                            </div>
+
+                            @php
+                                $summaryText = trim((string) (
+                                    $textSummaryByLabel[(string) $text->label]
+                                    ?? $textSummaryByLabel[(string) $loop->iteration]
+                                    ?? ''
+                                ));
+                            @endphp
+
+                            @if($summaryText !== '')
+                                <div class="mt-4 overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm">
+                                    <div class="flex items-center gap-2 border-b border-amber-200/70 bg-white/50 px-4 py-3">
+                                        {{-- <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10 2a1 1 0 01.894.553l2 4A1 1 0 0112 8H8a1 1 0 01-.894-1.447l2-4A1 1 0 0110 2zM4 9a2 2 0 100 4 2 2 0 000-4zm12 0a2 2 0 100 4 2 2 0 000-4zM5 15a3 3 0 013-3h4a3 3 0 013 3v1H5v-1z"/>
+                                            </svg>
+                                        </div> --}}
+                                        <div>
+                                            {{-- <div class="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">Quick Understanding</div> --}}
+                                            <div class="text-sm font-semibold text-slate-900">Zusammenfassung</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="px-4 py-4 md:px-5">
+                                        <div class="rounded-xl bg-white/70 px-4 py-4 text-sm md:text-[15px] leading-7 text-slate-800 rtl">
+                                            {{ $summaryText }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </article>
                     @endforeach
                 </div>
             </section>
 
-            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-5 shadow-xl">
+            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 md:p-5 shadow-xl">
                 <div class="space-y-3">
                     @foreach($part->lesenMatchingOptions as $option)
                         @php
                             $wasChosen = in_array((int) $option->id, collect($assignments)->map(fn ($value) => (int) $value)->all(), true);
                             $isCorrectOption = in_array((int) $option->id, $correctOptionIds, true);
                         @endphp
-                        <div class="rounded-xl border px-4 py-3 text-xl font-semibold {{ $wasChosen ? ($isCorrectOption ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-rose-400 bg-rose-500 text-white') : ($isCorrectOption ? 'border-emerald-300 bg-emerald-100 text-emerald-900' : 'border-indigo-300 bg-[#b5b8ff] text-slate-900') }}">
+                        <div class="rounded-xl border px-3 py-3 text-sm md:text-lg xl:text-xl font-semibold leading-snug {{ $wasChosen ? ($isCorrectOption ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-rose-400 bg-rose-500 text-white') : ($isCorrectOption ? 'border-emerald-300 bg-emerald-100 text-emerald-900' : 'border-indigo-300 bg-[#b5b8ff] text-slate-900') }}">
                             {{ $option->option_key }}. {{ $option->option_text }}
                         </div>
                     @endforeach

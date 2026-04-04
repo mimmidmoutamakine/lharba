@@ -31,6 +31,7 @@ class AttemptReviewController extends Controller
 
         $part->load([
             'section',
+            'examPartEntries.versions.blocks',
             'lesenMatchingTexts',
             'lesenMatchingOptions',
             'lesenMatchingAnswers',

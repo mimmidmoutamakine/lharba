@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserExamAccess;
+use App\Models\UserExamRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,61 +15,86 @@ class UserApprovalController extends Controller
     public function index(): View
     {
         return view('admin.approvals.index', [
-            'pendingUsers' => User::query()
-                ->where('is_admin', false)
-                ->where(function ($query) {
-                    $query
-                        ->where('access_status', User::ACCESS_PENDING)
-                        ->orWhereNull('access_status');
-                })
+            'pendingRequests' => UserExamRequest::query()
+                ->with(['user', 'examFamily'])
+                ->where('status', UserExamRequest::STATUS_PENDING)
                 ->latest()
                 ->get(),
-            'recentUsers' => User::query()
-                ->where('is_admin', false)
-                ->whereIn('access_status', [User::ACCESS_APPROVED, User::ACCESS_REJECTED])
-                ->latest('approved_at')
+
+            'recentRequests' => UserExamRequest::query()
+                ->with(['user', 'examFamily'])
+                ->whereIn('status', [UserExamRequest::STATUS_APPROVED, UserExamRequest::STATUS_REJECTED])
+                ->latest('reviewed_at')
                 ->limit(20)
                 ->get(),
         ]);
     }
 
-    public function approve(Request $request, User $user): RedirectResponse
+    public function approve(Request $request, UserExamRequest $approval): RedirectResponse
     {
-        abort_if($user->isAdmin(), 404);
-
         $request->validate([
             'approval_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $user->forceFill([
-            'access_status' => User::ACCESS_APPROVED,
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-            'approval_note' => $request->string('approval_note')->toString() ?: null,
-        ])->save();
+        $approval->update([
+            'status' => UserExamRequest::STATUS_APPROVED,
+            'reviewed_at' => now(),
+            'reviewed_by' => $request->user()->id,
+            'review_note' => $request->string('approval_note')->toString() ?: null,
+        ]);
+
+        UserExamAccess::firstOrCreate(
+            [
+                'user_id' => $approval->user_id,
+                'exam_family_id' => $approval->exam_family_id,
+                'level' => $approval->level,
+            ],
+            [
+                'status' => UserExamAccess::STATUS_ACTIVE,
+                'granted_at' => now(),
+                'granted_by' => $request->user()->id,
+                'note' => $request->string('approval_note')->toString() ?: null,
+            ]
+        );
+
+        User::query()
+            ->where('id', $approval->user_id)
+            ->update([
+                'access_status' => User::ACCESS_APPROVED,
+                'approved_at' => now(),
+                'approved_by' => $request->user()->id,
+                'approval_note' => $request->string('approval_note')->toString() ?: null,
+            ]);
 
         return redirect()
             ->route('admin.approvals.index')
-            ->with('status', "تمت الموافقة على {$user->name} بنجاح.");
+            ->with('status', 'تمت الموافقة على الطلب بنجاح.');
     }
 
-    public function reject(Request $request, User $user): RedirectResponse
+    public function reject(Request $request, UserExamRequest $approval): RedirectResponse
     {
-        abort_if($user->isAdmin(), 404);
-
         $request->validate([
             'approval_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $user->forceFill([
-            'access_status' => User::ACCESS_REJECTED,
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-            'approval_note' => $request->string('approval_note')->toString() ?: null,
-        ])->save();
+        $approval->update([
+            'status' => UserExamRequest::STATUS_REJECTED,
+            'reviewed_at' => now(),
+            'reviewed_by' => $request->user()->id,
+            'review_note' => $request->string('approval_note')->toString() ?: null,
+        ]);
+
+        User::query()
+            ->where('id', $approval->user_id)
+            ->update([
+                'access_status' => User::ACCESS_REJECTED,
+                'approved_at' => now(),
+                'approved_by' => $request->user()->id,
+                'approval_note' => $request->string('approval_note')->toString() ?: null,
+            ]);
 
         return redirect()
             ->route('admin.approvals.index')
-            ->with('status', "تم رفض طلب {$user->name}.");
+            ->with('status', 'تم رفض الطلب.');
     }
 }
