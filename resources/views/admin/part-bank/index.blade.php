@@ -23,7 +23,7 @@
         <form method="POST" action="{{ route('admin.part-bank.import-lesen-teil1') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 md:grid-cols-5">
             @csrf
             <input type="file" name="csv_file" accept=".json,application/json,text/plain" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2" required>
-            <input type="text" name="level" value="b2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
+            <input type="text" name="level"  class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
             <input type="number" name="points" value="25" min="0" max="200" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Points override">
             <button type="submit" class="rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">Import JSON</button>
             <textarea name="instruction_text" rows="2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-5" placeholder="Instruction text override (optional)"></textarea>
@@ -43,7 +43,7 @@
         <form method="POST" action="{{ route('admin.part-bank.import-lesen-teil2') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 md:grid-cols-5">
             @csrf
             <input type="file" name="csv_file" accept=".json,application/json,text/plain" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2" required>
-            <input type="text" name="level" value="b2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
+            <input type="text" name="level"  class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
             <input type="number" name="points" value="25" min="0" max="200" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Points override">
             <button type="submit" class="rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">Import JSON</button>
             <textarea name="instruction_text" rows="2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-5" placeholder="Instruction text override (optional)"></textarea>
@@ -59,7 +59,7 @@
         <form method="POST" action="{{ route('admin.part-bank.import-lesen-teil3') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 md:grid-cols-5">
             @csrf
             <input type="file" name="csv_file" accept=".json,application/json,text/plain" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2" required>
-            <input type="text" name="level" value="b2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
+            <input type="text" name="level"  class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
             <input type="number" name="points" value="25" min="0" max="200" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Points override">
             <button type="submit" class="rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">Import JSON</button>
             <textarea name="instruction_text" rows="2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-5" placeholder="Instruction text override (optional)"></textarea>
@@ -75,13 +75,13 @@
         <form method="POST" action="{{ route('admin.part-bank.import-sprachbausteine-teil1') }}" enctype="multipart/form-data" class="mt-3 grid gap-3 md:grid-cols-5">
             @csrf
             <input type="file" name="csv_file" accept=".json,application/json,text/plain" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-2" required>
-            <input type="text" name="level" value="b2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
+            <input type="text" name="level"  class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Level override (optional)">
             <input type="number" name="points" value="15" min="0" max="200" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm" placeholder="Points override">
             <button type="submit" class="rounded-md bg-indigo-700 px-4 py-2 text-sm font-semibold text-white">Import JSON</button>
             <textarea name="instruction_text" rows="2" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm md:col-span-5" placeholder="Instruction text override (optional)"></textarea>
         </form>
     </div>
-    
+
     <div class="mt-6 rounded-lg bg-white p-4 shadow">
         <div class="flex items-center justify-between">
             <h3 class="text-sm font-semibold text-slate-900">Imported Models</h3>

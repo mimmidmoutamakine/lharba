@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->belongsTo(self::class, 'approved_by');
     }
 
+    public function examAccesses()
+    {
+        return $this->hasMany(UserExamAccess::class);
+    }
+
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;

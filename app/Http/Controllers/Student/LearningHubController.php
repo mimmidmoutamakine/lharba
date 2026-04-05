@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
+use App\Models\UserExamAccess;
+use Illuminate\Database\Eloquent\Builder;
 
 class LearningHubController extends Controller
 {
@@ -88,7 +90,7 @@ class LearningHubController extends Controller
         $difficultyFilter = (string) $request->string('difficulty');
         $sort = (string) $request->string('sort', 'title');
 
-        $query = PartBankItem::query()->active();
+        $query = $this->accessibleBankItemsQuery();
         if ($sectionFilter !== '' && isset(self::SECTION_CHOICES[$sectionFilter])) {
             $query
                 ->where('section_type', self::SECTION_CHOICES[$sectionFilter]['section_type'])
@@ -151,8 +153,7 @@ class LearningHubController extends Controller
     }
     public function builder(): View
     {
-        $models = PartBankItem::query()
-            ->active()
+        $models = $this->accessibleBankItemsQuery()
             ->orderBy('section_type')
             ->orderBy('title')
             ->get(['id', 'title', 'section_type', 'part_title', 'level']);
@@ -175,7 +176,7 @@ class LearningHubController extends Controller
     {
         $items = collect(self::SECTION_CHOICES)
             ->map(function (array $config) {
-                return PartBankItem::query()
+                return $this->accessibleBankItemsQuery()
                     ->active()
                     ->where('section_type', $config['section_type'])
                     ->where('part_type', $config['part_type'])
@@ -208,7 +209,7 @@ class LearningHubController extends Controller
         $items = $selected->map(function (string $key) {
             $config = self::SECTION_CHOICES[$key];
 
-            return PartBankItem::query()
+            return $this->accessibleBankItemsQuery()
                 ->active()
                 ->where('section_type', $config['section_type'])
                 ->where('part_type', $config['part_type'])
@@ -237,7 +238,7 @@ class LearningHubController extends Controller
             throw ValidationException::withMessages(['model_ids' => 'Select at least one model for custom exam.']);
         }
 
-        $items = PartBankItem::query()
+        $items = $this->accessibleBankItemsQuery()
             ->active()
             ->whereIn('id', $modelIds->all())
             ->get()
@@ -256,6 +257,13 @@ class LearningHubController extends Controller
     public function startModel(Request $request, PracticeExamBuilderService $builder, PartBankItem $model): RedirectResponse
     {
         abort_unless($model->is_active, 404);
+
+        $allowedIds = $this->accessibleBankItemsQuery()
+            ->pluck('id')
+            ->all();
+
+        abort_unless(in_array((int) $model->id, $allowedIds, true), 403);
+
         $exam = $builder->createFromBankItems(Auth::user(), collect([$model]), 'Model Practice');
 
         return redirect()->route('exams.start', $exam);
@@ -273,7 +281,7 @@ class LearningHubController extends Controller
         }
 
         $choice = self::SECTION_CHOICES[$nextTask['key']];
-        $item = PartBankItem::query()
+        $item = $this->accessibleBankItemsQuery()
             ->active()
             ->where('section_type', $choice['section_type'])
             ->where('part_type', $choice['part_type'])
@@ -293,7 +301,7 @@ class LearningHubController extends Controller
     {
         $leaderboard = $this->buildChallengeLeaderboard();
         $personalBest = (int) ($leaderboard->firstWhere('user_id', Auth::id())['rounds'] ?? 0);
-        $availableParts = PartBankItem::query()
+        $availableParts = $this->accessibleBankItemsQuery()
             ->active()
             ->get(['section_type', 'part_type', 'part_title'])
             ->map(fn (PartBankItem $item): array => [
@@ -368,7 +376,7 @@ class LearningHubController extends Controller
             ->flatMap(fn (array $group) => $group['items'])
             ->firstWhere('key', $challengeKey);
 
-        $query = PartBankItem::query()->active();
+        $query = $this->accessibleBankItemsQuery();
         if (is_array($challengeChoice)) {
             $query
                 ->where('section_type', $challengeChoice['section_type'])
@@ -919,4 +927,43 @@ class LearningHubController extends Controller
             'schreiben' => max(1, min(12, (int) ($rows[ExamSection::TYPE_SCHREIBEN] ?? $defaults[ExamSection::TYPE_SCHREIBEN]))),
         ];
     }
+
+    private function activeAccessLevels(): array
+    {
+        $user = Auth::user();
+
+        if (! $user || $user->isAdmin()) {
+            return [];
+        }
+
+        return UserExamAccess::query()
+            ->activeNow()
+            ->where('user_id', $user->id)
+            ->pluck('level')
+            ->filter()
+            ->map(fn ($level) => strtolower(trim((string) $level)))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function accessibleBankItemsQuery(): Builder
+    {
+        $query = PartBankItem::query()->active();
+
+        $user = Auth::user();
+
+        if (! $user || $user->isAdmin()) {
+            return $query;
+        }
+
+        $levels = $this->activeAccessLevels();
+
+        if ($levels === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('level', $levels);
+    }
+
 }

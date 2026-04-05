@@ -61,20 +61,34 @@
                 $row['best_score'] < 60 => 'training-model-badge-bad',
                 default => 'training-model-badge-good',
             };
+
+            $levelBadge = strtoupper(trim((string) ($item->level ?? '')));
         @endphp
 
     <article class="training-model-card hub-float-in">
         <div class="training-model-mobile-head">
             <div class="training-model-head">
+                <div class="mb-2 flex items-center justify-end gap-2">
+                    @if($levelBadge !== '')
+                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">
+                            {{ $levelBadge }}
+                        </span>
+                    @endif
+                    <span class="training-model-status {{ $statusClass }}">{{ $statusLabel }}</span>
+                </div>
+
                 <h3 class="training-model-title" title="{{ $displayTitle }}">{{ $displayTitle }}</h3>
                 <p class="training-model-subtitle" title="{{ $partLabel }}">{{ $partLabel }}</p>
             </div>
-
-            <span class="training-model-status {{ $statusClass }}">{{ $statusLabel }}</span>
         </div>
 
         <div class="training-model-mobile-pill-row">
             <span class="training-model-pill">{{ $partLabel }}</span>
+            @if($levelBadge !== '')
+                <span class="training-model-pill" style="background:#eef2ff;color:#4338ca;">
+                    {{ $levelBadge }}
+                </span>
+            @endif
         </div>
 
         <div class="training-model-mobile-metrics">
