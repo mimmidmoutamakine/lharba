@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc *)",
+      "Bash(grep -r \"aria-label\\\\|role=\" resources/views/student/hub/*.blade.php)",
+      "Bash(grep -n \"touch\\\\|tap\\\\|pointer\" resources/js/*.js)",
+      "Bash(npm run *)",
+      "Bash(php artisan *')",
+      "Bash(php artisan *)",
+      "Bash(xargs grep *)",
+      "Bash(sed -n '120,160p' resources/js/exam-sprach-gap.js)",
+      "Bash(sed -n '145,185p' resources/js/exam-sprach-pool.js)",
+      "Bash(sed -n '125,165p' resources/js/exam-hoeren-tf.js)",
+      "Bash(sed -n '128,150p' resources/js/exam-writing.js)"
+    ]
+  }
+}

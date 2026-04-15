@@ -6,7 +6,7 @@
     <title>Review - {{ $attempt->exam->title }} - {{ $part->title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#d9d9d9] pb-10 text-slate-900">
+<body class="bg-zinc-50 pb-6 text-slate-900">
 <x-exam.header
     :attempt="$attempt"
     :exam="$attempt->exam"
@@ -17,7 +17,7 @@
     :review-mode="true"
 />
 
-<div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
+<div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
     {{ $part->section->title }}, {{ strtoupper($part->title) }} - REVIEW
 </div>
 
@@ -108,14 +108,14 @@
                 </div>
             </section>
 
-            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 md:p-5 shadow-xl">
+            <aside class="rounded-2xl border border-slate-300 bg-white p-3 md:p-5 shadow-xl">
                 <div class="space-y-3">
                     @foreach($part->lesenMatchingOptions as $option)
                         @php
                             $wasChosen = in_array((int) $option->id, collect($assignments)->map(fn ($value) => (int) $value)->all(), true);
                             $isCorrectOption = in_array((int) $option->id, $correctOptionIds, true);
                         @endphp
-                        <div class="rounded-xl border px-3 py-3 text-sm md:text-lg xl:text-xl font-semibold leading-snug {{ $wasChosen ? ($isCorrectOption ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-rose-400 bg-rose-500 text-white') : ($isCorrectOption ? 'border-emerald-300 bg-emerald-100 text-emerald-900' : 'border-indigo-300 bg-[#b5b8ff] text-slate-900') }}">
+                        <div class="rounded-xl border px-3 py-3 text-sm font-semibold leading-snug md:text-lg xl:text-xl {{ $wasChosen ? ($isCorrectOption ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-rose-400 bg-rose-500 text-white') : ($isCorrectOption ? 'border-emerald-300 bg-emerald-100 text-emerald-900' : 'border-indigo-200 bg-indigo-50 text-slate-900') }}">
                             {{ $option->option_key }}. {{ $option->option_text }}
                         </div>
                     @endforeach
@@ -146,7 +146,7 @@
                         $givenId = (int) ($choices[$question->id] ?? 0);
                         $correctOption = $question->options->firstWhere('is_correct', true);
                     @endphp
-                    <article class="rounded-xl border border-slate-300 bg-[#eceef8] p-3 shadow">
+                    <article class="rounded-xl border border-slate-300 bg-white p-3 shadow">
                         <h4 class="text-[17px] font-bold leading-tight">{{ $index + 1 }}. {{ $question->question_text }}</h4>
                         <div class="mt-2 space-y-1 text-[15px] leading-snug">
                             @foreach($question->options as $option)
@@ -193,7 +193,7 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     @foreach($part->lesenSituationAds as $ad)
                         <article class="rounded-md border border-slate-300 bg-white p-4 shadow-sm">
-                            <div class="mb-3 min-h-8 rounded bg-[#b5b8ff] px-3 py-2 text-xl font-bold text-slate-900">
+                            <div class="mb-3 min-h-8 rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-xl font-bold text-slate-900">
                                 {{ $ad->label }}. {{ $ad->title }}
                             </div>
                             <div class="whitespace-pre-line text-lg leading-relaxed">{{ $ad->body_text }}</div>
@@ -202,7 +202,7 @@
                 </div>
             </section>
 
-            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
+            <aside class="rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
                 @foreach($part->lesenSituations as $index => $situation)
                     @php
                         $givenRaw = $assignments[$situation->id] ?? null;
@@ -272,7 +272,7 @@
                 </article>
             </section>
 
-            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
+            <aside class="rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
                 @foreach($part->sprachGapQuestions->sortBy('sort_order') as $question)
                     @php
                         $givenId = (int) ($choices[$question->id] ?? 0);
@@ -345,14 +345,14 @@
                 </article>
             </section>
 
-            <aside class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
+            <aside class="rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
                 <div class="space-y-1.5 pr-0.5">
                     @foreach($part->sprachPoolOptions as $option)
                         @php
                             $selectedGap = collect($assignments)->search((int) $option->id, true);
                             $isCorrectSelection = $selectedGap !== false && (int) ($correctByGapId[$selectedGap] ?? 0) === (int) $option->id;
                             $isWrongSelection = $selectedGap !== false && ! $isCorrectSelection;
-                            $classes = 'border-indigo-300 bg-[#b5b8ff] text-slate-900';
+                            $classes = 'border-indigo-200 bg-indigo-50 text-slate-900';
                             if ($isCorrectSelection) {
                                 $classes = 'border-emerald-500 bg-emerald-500 text-white';
                             } elseif ($isWrongSelection) {
@@ -373,14 +373,14 @@
         @php $choices = (array) ($answerJson['tf_choices'] ?? []); @endphp
         <div class="mx-auto max-w-[1220px]">
             <x-exam.instruction-box :text="$part->instruction_text" />
-            <div class="mt-6 overflow-hidden rounded border border-slate-300 bg-white shadow">
-                <table class="w-full border-collapse text-xl">
+            <div class="mt-6 overflow-x-auto rounded border border-slate-200 bg-white shadow-sm">
+                <table class="w-full min-w-[480px] border-collapse text-base sm:text-xl">
                     <thead>
-                        <tr class="bg-[#143773] text-left text-white">
-                            <th class="w-20 border border-slate-300 px-3 py-2"></th>
-                            <th class="w-44 border border-slate-300 px-3 py-2">Ihre Antwort</th>
-                            <th class="w-44 border border-slate-300 px-3 py-2">Richtig</th>
-                            <th class="border border-slate-300 px-3 py-2"></th>
+                        <tr class="border-l-4 border-l-[#d62828] bg-[#112442] text-left text-white">
+                            <th class="w-10 border-b border-slate-700 px-2 py-2 sm:w-20 sm:px-3"></th>
+                            <th class="w-28 border-b border-slate-700 px-2 py-2 text-sm sm:w-44 sm:px-3 sm:text-base">Ihre Antwort</th>
+                            <th class="w-28 border-b border-slate-700 px-2 py-2 text-sm sm:w-44 sm:px-3 sm:text-base">Richtig</th>
+                            <th class="border-b border-slate-700 px-2 py-2 sm:px-3"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -391,11 +391,11 @@
                                 $correct = $question->is_true_correct ? 'Richtig' : 'Falsch';
                                 $isCorrect = in_array($givenRaw, ['true', 'false'], true) && (($givenRaw === 'true') === (bool) $question->is_true_correct);
                             @endphp
-                            <tr class="{{ $isCorrect ? 'bg-emerald-50' : 'bg-rose-50' }}">
-                                <td class="border border-slate-300 px-3 py-3 text-center font-bold">{{ $index + 1 }}.</td>
-                                <td class="border border-slate-300 px-3 py-3">{{ $given }}</td>
-                                <td class="border border-slate-300 px-3 py-3 font-semibold">{{ $correct }}</td>
-                                <td class="border border-slate-300 px-3 py-3 leading-tight">{{ $question->statement_text }}</td>
+                            <tr class="border-b border-slate-100 last:border-0 {{ $isCorrect ? 'bg-emerald-50/60' : 'bg-rose-50/60' }}">
+                                <td class="px-2 py-3 text-center font-bold sm:px-3">{{ $index + 1 }}.</td>
+                                <td class="px-2 py-3 text-sm sm:px-3 sm:text-base">{{ $given }}</td>
+                                <td class="px-2 py-3 text-sm font-semibold sm:px-3 sm:text-base">{{ $correct }}</td>
+                                <td class="px-2 py-3 text-sm leading-snug sm:px-3 sm:text-base sm:leading-tight">{{ $question->statement_text }}</td>
                             </tr>
                         @endforeach
                     </tbody>

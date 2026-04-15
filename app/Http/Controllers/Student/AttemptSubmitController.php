@@ -21,9 +21,11 @@ class AttemptSubmitController extends Controller
         $attemptService->syncSchreibenRemainingSeconds($attempt);
         $attempt->refresh();
 
-        $forceExpired = $attempt->remaining_seconds <= 0
+        $forceExpired = $attempt->respect_time && (
+            $attempt->remaining_seconds <= 0
             || (! is_null($attempt->hoeren_remaining_seconds) && $attempt->hoeren_remaining_seconds <= 0)
-            || (! is_null($attempt->schreiben_remaining_seconds) && $attempt->schreiben_remaining_seconds <= 0);
+            || (! is_null($attempt->schreiben_remaining_seconds) && $attempt->schreiben_remaining_seconds <= 0)
+        );
         $summary = $attemptService->submitAttempt($attempt, $forceExpired);
 
         return response()->json([

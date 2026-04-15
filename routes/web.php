@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\SprachbausteineTeil2Controller;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\AttemptSaveController;
 use App\Http\Controllers\Student\AttemptSubmitController;
+use App\Http\Controllers\Student\AttemptTimeModeController;
 use App\Http\Controllers\Student\AttemptFinishedController;
 use App\Http\Controllers\Student\AttemptReviewController;
 use App\Http\Controllers\Student\ApprovalStatusController;
@@ -58,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/training/custom', [LearningHubController::class, 'startCustomExam'])->name('training.custom');
         Route::post('/training/models/{model}/start', [LearningHubController::class, 'startModel'])->name('training.models.start');
         Route::get('/training/models/{model}/print', [StudentPartPrintController::class, 'show'])->name('training.models.print');
+        Route::post('/training/models/{model}/rate', [LearningHubController::class, 'rateModel'])->name('training.models.rate');
 
         Route::get('/challenge', [LearningHubController::class, 'challenge'])->name('challenge.index');
         Route::get('/challenge/start/{challengeKey}', [LearningHubController::class, 'startChallengeLink'])->name('challenge.start.link');
@@ -65,12 +67,15 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/progress', [LearningHubController::class, 'progress'])->name('progress.index');
 
+        Route::get('/session-ping', fn () => response()->noContent())->name('session.ping');
+
         Route::get('/exams/{exam}/start', ExamStartController::class)->name('exams.start');
         Route::get('/exams/{exam}/start-hoeren', HoerenStartController::class)->name('exams.start-hoeren');
         Route::get('/exams/{exam}/start-schreiben', SchreibenStartController::class)->name('exams.start-schreiben');
         Route::get('/attempts/{attempt}/part/{part}', StudentExamPartController::class)->name('attempts.parts.show');
         Route::post('/attempts/{attempt}/save', AttemptSaveController::class)->name('attempts.save');
         Route::post('/attempts/{attempt}/submit', AttemptSubmitController::class)->name('attempts.submit');
+        Route::patch('/attempts/{attempt}/time-mode', AttemptTimeModeController::class)->name('attempts.time-mode');
         Route::get('/attempts/{attempt}/finished', AttemptFinishedController::class)->name('attempts.finished');
         Route::get('/attempts/{attempt}/review/{part}', AttemptReviewController::class)->name('attempts.review.show');
     });

@@ -26,8 +26,10 @@ class ExamStartController extends Controller
             ->first();
 
         if (! $attempt) {
-            $hasHoeren = $exam->sections()->where('type', ExamSection::TYPE_HOEREN)->exists();
+            $hasHoeren   = $exam->sections()->where('type', ExamSection::TYPE_HOEREN)->exists();
             $hasSchreiben = $exam->sections()->where('type', ExamSection::TYPE_SCHREIBEN)->exists();
+            $respectTime  = (bool) session()->pull('pending_respect_time', true);
+
             $attempt = ExamAttempt::query()->create([
                 'exam_id' => $exam->id,
                 'user_id' => Auth::id(),
@@ -38,6 +40,7 @@ class ExamStartController extends Controller
                 'schreiben_remaining_seconds' => $hasSchreiben ? 30 * 60 : null,
                 'schreiben_last_synced_at' => $hasSchreiben ? now() : null,
                 'status' => ExamAttempt::STATUS_IN_PROGRESS,
+                'respect_time' => $respectTime,
             ]);
         }
 

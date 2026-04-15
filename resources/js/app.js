@@ -75,6 +75,8 @@ window.trainingFilterBar = function ({ values, options }) {
         options,
         openKey: null,
         loading: false,
+        mobileSheetOpen: false,
+        showSecondary: false,
 
         toggle(key) {
             this.openKey = this.openKey === key ? null : key;
@@ -86,12 +88,38 @@ window.trainingFilterBar = function ({ values, options }) {
 
         closeAll() {
             this.openKey = null;
+            this.mobileSheetOpen = false;
         },
 
         closeIfSame(key) {
             if (this.openKey === key) {
                 this.openKey = null;
             }
+        },
+
+        activeFilterCount() {
+            return [
+                this.values.section !== '',
+                this.values.difficulty !== '',
+                this.values.status !== '',
+                this.values.sort !== 'title',
+            ].filter(Boolean).length;
+        },
+
+        // Only counts the filters shown in the advanced sheet (not section, which has its own tabs)
+        advancedFilterCount() {
+            return [
+                this.values.difficulty !== '',
+                this.values.status !== '',
+                this.values.sort !== 'title',
+            ].filter(Boolean).length;
+        },
+
+        async resetFilters() {
+            this.values.difficulty = '';
+            this.values.status = '';
+            this.values.sort = 'title';
+            await this.refreshList();
         },
 
         selectedLabel(key) {
@@ -107,6 +135,23 @@ window.trainingFilterBar = function ({ values, options }) {
             this.values[key] = value;
             this.closeAll();
             await this.refreshList();
+        },
+
+        // Returns the section group prefix ('lesen', 'sprach', 'hoeren', 'schreiben', or '')
+        get activeGroup() {
+            const s = this.values.section;
+            if (!s) return '';
+            const m = s.match(/^(lesen|sprach|hoeren|schreiben)/);
+            return m ? m[1] : '';
+        },
+
+        // Click a group label: if already in the group keep sub-selection, else jump to defaultKey
+        async selectGroup(group, defaultKey) {
+            if (group === '') {
+                await this.selectAndSubmit('section', '');
+            } else if (this.activeGroup !== group) {
+                await this.selectAndSubmit('section', defaultKey);
+            }
         },
 
         async refreshList() {
@@ -145,6 +190,35 @@ window.trainingFilterBar = function ({ values, options }) {
         },
     };
 };
+
+// ── Session expired banner ──────────────────────────────────────────────────
+window.showSessionExpiredBanner = function () {
+    if (document.getElementById('_sessionExpiredBanner')) return;
+    const el = document.createElement('div');
+    el.id = '_sessionExpiredBanner';
+    el.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
+        'background:#991b1b', 'color:#fff', 'display:flex', 'align-items:center',
+        'justify-content:center', 'gap:12px', 'padding:12px 16px',
+        'font-size:14px', 'font-weight:500', 'direction:rtl',
+        'box-shadow:0 2px 8px rgba(0,0,0,.35)',
+    ].join(';');
+    el.innerHTML = `
+        <span>⚠️ انتهت الجلسة — إجاباتك لن تُحفظ. أعد تحميل الصفحة قبل الاستمرار.</span>
+        <button onclick="window.location.reload()"
+                style="background:#fff;color:#991b1b;border:none;padding:4px 14px;border-radius:5px;font-weight:700;cursor:pointer;flex-shrink:0;">
+            إعادة تحميل
+        </button>
+    `;
+    document.body.insertBefore(el, document.body.firstChild);
+};
+
+// ── Session keepalive — pings server every 4 min to prevent idle expiry ────
+(function startSessionKeepalive() {
+    setInterval(function () {
+        fetch('/session-ping', { credentials: 'same-origin' }).catch(() => {});
+    }, 4 * 60 * 1000);
+})();
 
 window.Alpine = Alpine;
 

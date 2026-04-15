@@ -117,6 +117,9 @@ window.readingMcqEngine = function readingMcqEngine(config) {
                     }),
                 });
 
+                if (response.status === 419 || response.status === 401) {
+                    window.showSessionExpiredBanner?.();
+                }
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.message || 'Save failed');

@@ -14,7 +14,7 @@ class ExamAttemptService
 {
     public function syncSchreibenRemainingSeconds(ExamAttempt $attempt): ExamAttempt
     {
-        if ($attempt->isClosed() || is_null($attempt->schreiben_remaining_seconds)) {
+        if ($attempt->isClosed() || is_null($attempt->schreiben_remaining_seconds) || ! $attempt->respect_time) {
             return $attempt;
         }
 
@@ -33,7 +33,7 @@ class ExamAttemptService
 
     public function syncHoerenRemainingSeconds(ExamAttempt $attempt): ExamAttempt
     {
-        if ($attempt->isClosed() || is_null($attempt->hoeren_remaining_seconds)) {
+        if ($attempt->isClosed() || is_null($attempt->hoeren_remaining_seconds) || ! $attempt->respect_time) {
             return $attempt;
         }
 
@@ -52,7 +52,7 @@ class ExamAttemptService
 
     public function syncRemainingSeconds(ExamAttempt $attempt): ExamAttempt
     {
-        if ($attempt->isClosed()) {
+        if ($attempt->isClosed() || ! $attempt->respect_time) {
             return $attempt;
         }
 

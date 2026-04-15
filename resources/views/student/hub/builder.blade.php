@@ -1,5 +1,5 @@
-﻿<x-app-layout>
-    <div class="hub-page space-y-6" dir="rtl">
+<x-app-layout>
+    <div class="hub-page space-y-6 pb-28 lg:pb-0" dir="rtl">
         @if ($errors->any())
             <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {{ $errors->first() }}
@@ -15,7 +15,6 @@
                         اختار النماذج اللي باغي، جرّهم من اللائحة، وركّب امتحانك الخاص بترتيب واضح وبسيط.
                     </p>
                 </div>
-
                 <div class="flex flex-wrap items-center gap-3">
                     <a href="{{ route('training.index') }}" class="hub-glow-button hub-glow-button-secondary px-4 py-2 text-sm font-semibold">
                         رجوع للتدريب
@@ -28,7 +27,10 @@
             x-data='customExamBuilder(@json($modelsForBuilder), @json($capacities))'
             class="grid gap-5 lg:grid-cols-12 lg:gap-6"
         >
-            <section class="order-1 space-y-5 lg:col-span-7 lg:space-y-6">
+            {{-- ── Drop zones (full-width on mobile, col-7 on desktop) ── --}}
+            <section class="space-y-5 lg:col-span-7 lg:space-y-6">
+
+                {{-- القراءة --}}
                 <div class="hub-builder-zone p-4 sm:p-5">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <span class="hub-builder-chip hub-builder-chip-black" x-text="assigned.lesen.length + ' من ' + capacities.lesen"></span>
@@ -60,15 +62,13 @@
                                 </div>
                             </div>
                         </template>
-
                         <template x-for="n in placeholders('lesen')" :key="'lesen-ph-' + n">
-                            <div class="hub-builder-drop">
-                                ضع هنا نموذج القراءة
-                            </div>
+                            <div class="hub-builder-drop">ضع هنا نموذج القراءة</div>
                         </template>
                     </div>
                 </div>
 
+                {{-- اللغويات --}}
                 <div class="hub-builder-zone p-4 sm:p-5">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <span class="hub-builder-chip hub-builder-chip-red" x-text="assigned.sprachbausteine.length + ' من ' + capacities.sprachbausteine"></span>
@@ -100,15 +100,13 @@
                                 </div>
                             </div>
                         </template>
-
                         <template x-for="n in placeholders('sprachbausteine')" :key="'sprach-ph-' + n">
-                            <div class="hub-builder-drop">
-                                ضع هنا نموذج اللغويات
-                            </div>
+                            <div class="hub-builder-drop">ضع هنا نموذج اللغويات</div>
                         </template>
                     </div>
                 </div>
 
+                {{-- الكتابة --}}
                 <div class="hub-builder-zone p-4 sm:p-5">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <span class="hub-builder-chip hub-builder-chip-yellow" x-text="assigned.schreiben.length + ' من ' + capacities.schreiben"></span>
@@ -140,15 +138,13 @@
                                 </div>
                             </div>
                         </template>
-
                         <template x-for="n in placeholders('schreiben')" :key="'schreiben-ph-' + n">
-                            <div class="hub-builder-drop">
-                                ضع هنا نموذج الكتابة
-                            </div>
+                            <div class="hub-builder-drop">ضع هنا نموذج الكتابة</div>
                         </template>
                     </div>
                 </div>
 
+                {{-- Submit form --}}
                 <form method="POST" action="{{ route('training.custom') }}" class="hub-surface p-4 sm:p-5">
                     @csrf
                     <template x-for="id in submissionIds()" :key="'submit-' + id">
@@ -182,12 +178,13 @@
                 </form>
             </section>
 
-            <section class="order-2 hub-builder-pool p-4 text-white sm:p-5 lg:col-span-5">
+            {{-- ── Pool sidebar (desktop only) ── --}}
+            <section class="hidden hub-builder-pool p-4 text-white sm:p-5 lg:block lg:col-span-5">
                 <div class="space-y-2 text-right">
                     <p class="hub-kicker text-amber-200">قائمة النماذج</p>
                     <h2 class="text-2xl font-black tracking-tight">اختر من هنا</h2>
                     <p class="text-sm text-slate-200">
-                        جرّ أي نموذج من هاد اللائحة وحطّو فالمكان المناسب.
+                        اسحب النموذج وأفلته فوق الخانة المناسبة.
                     </p>
                 </div>
 
@@ -206,7 +203,6 @@
                             placeholder="قلّب على نموذج بالاسم..."
                         >
                     </div>
-
                     <div class="flex items-center justify-between gap-3 text-xs text-slate-300">
                         <span x-text="'المعروض: ' + filteredAvailable().length"></span>
                         <button
@@ -224,15 +220,15 @@
                 <div class="mt-4 h-[420px] overflow-y-auto rounded-[1.5rem] border border-white/10 bg-white/5 p-3 sm:h-[540px] lg:h-[680px]">
                     <template x-if="dragMeta">
                         <div class="mb-3 rounded-2xl border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-center text-xs text-amber-100">
-                            سحب النموذج وإفلاته فوق الخانة المناسبة.
+                            أفلت النموذج فوق الخانة المناسبة.
                         </div>
                     </template>
 
                     <template x-if="available.length === 0">
                         <div class="hub-builder-empty">
                             <div class="hub-builder-empty-icon">✓</div>
-                            <p class="text-sm font-semibold text-white">وزّعت جميع النماذج الموجودة</p>
-                            <p class="text-xs text-slate-300">حاول تبدّل الترتيب أو ابدأ الامتحان المركّب.</p>
+                            <p class="text-sm font-semibold text-white">وزّعت جميع النماذج</p>
+                            <p class="text-xs text-slate-300">ابدأ الامتحان المركّب الآن.</p>
                         </div>
                     </template>
 
@@ -246,7 +242,7 @@
 
                     <template x-for="model in filteredAvailable()" :key="'pool-' + model.id">
                         <div
-                            class="hub-builder-pool-item mb-2 cursor-grab px-3 py-3 transition"
+                            class="hub-builder-pool-item mb-2 cursor-grab px-3 py-3 transition select-none"
                             :class="{ 'hub-builder-pool-item-dragging': dragMeta && dragMeta.id === model.id && dragMeta.fromSection === null }"
                             draggable="true"
                             @dragstart="startDrag(model.id, null, null)"
@@ -261,6 +257,131 @@
                     </template>
                 </div>
             </section>
+
+            {{-- ── Mobile FAB (mobile only) ── --}}
+            <div
+                class="fixed bottom-6 inset-x-0 z-40 flex justify-center px-6 lg:hidden"
+                x-show="!mobilePoolOpen"
+                x-cloak
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 translate-y-2"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 translate-y-0"
+                x-transition:leave-end="opacity-0 translate-y-2"
+            >
+                <button
+                    @click="mobilePoolOpen = true"
+                    class="hub-mobile-fab-btn"
+                    type="button"
+                >
+                    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                    </svg>
+                    <span>اختر النماذج</span>
+                    <span class="hub-mobile-fab-badge" x-text="available.length"></span>
+                </button>
+            </div>
+
+            {{-- ── Mobile bottom sheet ── --}}
+            <div
+                x-show="mobilePoolOpen"
+                x-cloak
+                @click.self="mobilePoolOpen = false"
+                class="fixed inset-0 z-50 flex items-end bg-black/50 lg:hidden"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+            >
+                <div
+                    class="hub-mobile-sheet w-full"
+                    x-show="mobilePoolOpen"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="translate-y-full"
+                    x-transition:enter-end="translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="translate-y-0"
+                    x-transition:leave-end="translate-y-full"
+                    @click.stop
+                >
+                    {{-- Drag handle --}}
+                    <div class="flex justify-center pb-1 pt-3 shrink-0">
+                        <div class="h-1 w-10 rounded-full bg-white/20"></div>
+                    </div>
+
+                    {{-- Sheet header --}}
+                    <div class="flex items-center justify-between px-5 py-3 shrink-0">
+                        <button
+                            @click="mobilePoolOpen = false"
+                            type="button"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <div class="text-right">
+                            <h3 class="text-base font-black text-white">قائمة النماذج</h3>
+                            <p class="text-xs text-slate-300" x-text="available.length + ' نموذج متاح — انقر لإضافة'"></p>
+                        </div>
+                    </div>
+
+                    {{-- Sheet search --}}
+                    <div class="shrink-0 px-4 pb-3">
+                        <div class="hub-builder-search-wrap">
+                            <svg class="hub-builder-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="M20 20L16.5 16.5"></path>
+                            </svg>
+                            <input
+                                type="text"
+                                x-model.trim="search"
+                                class="hub-builder-search-input"
+                                placeholder="ابحث عن نموذج..."
+                            >
+                        </div>
+                    </div>
+
+                    {{-- Sheet items --}}
+                    <div class="flex-1 overflow-y-auto px-4 pb-8 space-y-2">
+                        <template x-if="available.length === 0">
+                            <div class="hub-builder-empty">
+                                <div class="hub-builder-empty-icon">✓</div>
+                                <p class="text-sm font-semibold text-white">وزّعت جميع النماذج</p>
+                                <p class="text-xs text-slate-300">ابدأ الامتحان المركّب الآن.</p>
+                            </div>
+                        </template>
+
+                        <template x-if="available.length > 0 && filteredAvailable().length === 0">
+                            <div class="hub-builder-empty">
+                                <div class="hub-builder-empty-icon">؟</div>
+                                <p class="text-sm font-semibold text-white">ما لقيناش نموذج بهاد الاسم</p>
+                                <p class="text-xs text-slate-300">جرّب كلمة أخرى.</p>
+                            </div>
+                        </template>
+
+                        <template x-for="model in filteredAvailable()" :key="'mpool-' + model.id">
+                            <div
+                                class="hub-builder-pool-item cursor-pointer select-none px-4 py-3.5 transition active:scale-[0.97]"
+                                :class="{ 'hub-builder-pool-item-flash': flashId === model.id }"
+                                @click="addToSection(model)"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="shrink-0 rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-[10px] font-bold text-amber-200" x-text="sectionLabel(model.section_type)"></span>
+                                    <div class="hub-builder-item-title flex-1 text-right text-sm font-semibold text-white" x-text="cleanModelTitle(model.title)"></div>
+                                </div>
+                                <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
+                                    <span class="hub-builder-meta-pill" x-text="partTitleLabel(model.part_title)"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -272,6 +393,9 @@
                 dragMeta: null,
                 hoverSection: null,
                 capacities: dbCapacities,
+                mobilePoolOpen: false,
+                flashId: null,
+                _dragging: false,
                 assigned: {
                     lesen: [],
                     sprachbausteine: [],
@@ -297,7 +421,6 @@
                         'Teil 2': 'الجزء 2',
                         'Teil 3': 'الجزء 3',
                     };
-
                     return map[part] ?? part;
                 },
                 cleanModelTitle(title) {
@@ -309,21 +432,48 @@
                         /^Hoeren\s+Teil\s+\d+\s*-\s*/i,
                         /^Schreiben\s+Teil\s+\d+\s*-\s*/i,
                     ];
-
                     let cleaned = raw;
-
                     patterns.forEach((pattern) => {
                         cleaned = cleaned.replace(pattern, '');
                     });
-
                     return cleaned || raw;
                 },
+                addToSection(model) {
+                    // Ignore if this was a drag interaction, not a real tap/click
+                    if (this._dragging) return;
+
+                    const section = this.sectionByType(model.section_type);
+                    if (!section) return;
+                    const idx = this.available.findIndex((item) => item.id === model.id);
+                    if (idx === -1) return;
+
+                    if (this.assigned[section].length >= this.capacities[section]) {
+                        const displaced = this.assigned[section].pop();
+                        if (displaced) this.available.push(displaced);
+                    }
+
+                    this.available.splice(idx, 1);
+                    this.assigned[section].push(model);
+                    this.available.sort((a, b) => a.title.localeCompare(b.title));
+
+                    // Brief flash feedback
+                    this.flashId = model.id;
+                    setTimeout(() => { if (this.flashId === model.id) this.flashId = null; }, 500);
+
+                    // Auto-close sheet when nothing left
+                    if (this.available.length === 0) {
+                        setTimeout(() => { this.mobilePoolOpen = false; }, 700);
+                    }
+                },
                 startDrag(id, fromSection, fromIndex) {
+                    this._dragging = true;
                     this.dragMeta = { id, fromSection, fromIndex };
                 },
                 clearDrag() {
                     this.dragMeta = null;
                     this.hoverSection = null;
+                    // Let click event fire first, then unset flag
+                    this.$nextTick(() => { this._dragging = false; });
                 },
                 onDragOver(section) {
                     this.hoverSection = section;
@@ -338,15 +488,12 @@
                 },
                 filteredAvailable() {
                     if (!this.search) return this.available;
-
                     const query = this.search.toLowerCase();
-
                     return this.available.filter((item) => {
                         const section = this.sectionLabel(item.section_type).toLowerCase();
                         const part = String(item.part_title ?? '').toLowerCase();
                         const title = String(item.title ?? '').toLowerCase();
                         const cleanedTitle = this.cleanModelTitle(item.title).toLowerCase();
-
                         return title.includes(query) || cleanedTitle.includes(query) || section.includes(query) || part.includes(query);
                     });
                 },
@@ -368,13 +515,9 @@
                     return this.sectionByType(item.section_type) === section;
                 },
                 dropZoneClass(section) {
-                    if (this.hoverSection !== section || !this.dragMeta) {
-                        return '';
-                    }
-
+                    if (this.hoverSection !== section || !this.dragMeta) return '';
                     const item = this.draggedItem();
                     if (!item) return '';
-
                     return this.canDropToSection(item, section)
                         ? 'ring-2 ring-emerald-300 bg-emerald-50/40'
                         : 'ring-2 ring-rose-300 bg-rose-50/40';
@@ -389,27 +532,18 @@
                         item = this.assigned[this.dragMeta.fromSection][this.dragMeta.fromIndex] ?? null;
                     }
 
-                    if (!item) {
-                        this.clearDrag();
-                        return;
-                    }
-
-                    if (!this.canDropToSection(item, section)) {
-                        this.clearDrag();
-                        return;
-                    }
+                    if (!item) { this.clearDrag(); return; }
+                    if (!this.canDropToSection(item, section)) { this.clearDrag(); return; }
 
                     if (this.dragMeta.fromSection !== null) {
-                        this.assigned[this.dragMeta.fromSection].splice(this.dragMeta.fromSection === section ? this.dragMeta.fromIndex : this.dragMeta.fromIndex, 1);
+                        this.assigned[this.dragMeta.fromSection].splice(this.dragMeta.fromIndex, 1);
                     } else {
                         this.removeFromPool(item.id);
                     }
 
                     if (this.assigned[section].length >= this.capacities[section]) {
                         const displaced = this.assigned[section].pop();
-                        if (displaced) {
-                            this.available.push(displaced);
-                        }
+                        if (displaced) this.available.push(displaced);
                     }
 
                     this.assigned[section].push(item);

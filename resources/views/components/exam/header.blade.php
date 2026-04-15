@@ -8,6 +8,13 @@
     'reviewMode' => false,
 ])
 
+@unless($reviewMode)
+<script>
+    window._examRespectTime  = {{ $attempt->respect_time ? 'true' : 'false' }};
+    window._examTimeModeUrl  = '{{ route('attempts.time-mode', $attempt) }}';
+</script>
+@endunless
+
 <header class="border-b border-slate-700 bg-[#112442] text-white shadow-lg">
     <div class="mx-auto max-w-[1650px] px-3 py-2 sm:px-4">
         <div class="flex flex-col gap-3 md:flex-row md:items-stretch md:justify-between">
@@ -23,8 +30,16 @@
                 <div class="min-w-0 flex-1 md:hidden">
                     <div class="truncate text-lg font-semibold">Deutsch - {{ strtoupper($exam->level) }}</div>
                     @if (!$reviewMode)
-                        <div class="text-sm text-slate-200">
-                            Verbleibende Zeit: <span id="remainingTimeLabel">--:--</span>
+                        <div class="flex items-center gap-1.5 text-sm text-slate-200">
+                            <button onclick="window.dispatchEvent(new CustomEvent('exam-time-toggle'))"
+                                    class="time-mode-btn {{ $attempt->respect_time ? '' : 'time-mode-off' }} opacity-80">
+                                <svg viewBox="0 0 20 20" fill="none" class="h-3.5 w-3.5">
+                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/>
+                                    <path d="M10 6v4l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M3.5 3.5l13 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" class="time-mode-slash"/>
+                                </svg>
+                            </button>
+                            <span class="remainingTimeLabel font-mono">--:--</span>
                         </div>
                     @endif
                 </div>
@@ -62,8 +77,19 @@
                         </a>
                     </div>
                 @else
-                    <div class="hidden text-base md:block">
-                        Verbleibende Zeit: <span id="remainingTimeLabel">--:--</span>
+                    <div class="hidden items-center gap-2 text-base md:flex">
+                        <button id="timeModeToggleBtn"
+                                onclick="window.dispatchEvent(new CustomEvent('exam-time-toggle'))"
+                                title="تبديل الوقت"
+                                class="time-mode-btn {{ $attempt->respect_time ? '' : 'time-mode-off' }}">
+                            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4">
+                                <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="M10 6v4l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M3.5 3.5l13 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" class="time-mode-slash"/>
+                            </svg>
+                        </button>
+                        <span>Verbleibende Zeit:</span>
+                        <span class="remainingTimeLabel font-mono">--:--</span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 md:flex md:justify-end">

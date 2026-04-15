@@ -16,6 +16,8 @@ window.matchingEngine = function matchingEngine(config) {
         draggingOptionId: null,
         remainingSeconds: Number(config.remainingSeconds || 0),
         textCount: Number(config.textCount || 0),
+        respectTime: window._examRespectTime !== false,
+        timeModeUrl: window._examTimeModeUrl || '',
         statusMessage: 'Bereit',
         autosaveTimeout: null,
         timerInterval: null,
@@ -143,6 +145,9 @@ window.matchingEngine = function matchingEngine(config) {
             this.updateTimerLabel();
             this.startTimer();
             this.updateCompletionIndicators();
+
+            // In-exam time-mode toggle (dispatched from the header button)
+            window.addEventListener('exam-time-toggle', () => this.toggleRespectTime());
         },
 
         bindTabNavigation() {
@@ -282,6 +287,9 @@ window.matchingEngine = function matchingEngine(config) {
                     }),
                 });
 
+                if (response.status === 419 || response.status === 401) {
+                    window.showSessionExpiredBanner?.();
+                }
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.message || 'Save failed');
@@ -385,27 +393,46 @@ window.matchingEngine = function matchingEngine(config) {
 
         startTimer() {
             clearInterval(this.timerInterval);
+            if (!this.respectTime) {
+                this.updateTimerLabel();
+                return;
+            }
             this.timerInterval = setInterval(() => {
                 if (this.remainingSeconds <= 0) {
                     clearInterval(this.timerInterval);
                     this.submitAttempt(true);
                     return;
                 }
-
                 this.remainingSeconds -= 1;
                 this.updateTimerLabel();
             }, 1000);
         },
 
         updateTimerLabel() {
+            const targets = document.querySelectorAll('.remainingTimeLabel');
+            if (!this.respectTime) {
+                targets.forEach(t => { t.innerText = '∞'; });
+                return;
+            }
             const safeSeconds = Math.max(0, Math.floor(this.remainingSeconds));
             const minutes = Math.floor(safeSeconds / 60).toString().padStart(2, '0');
             const seconds = (safeSeconds % 60).toString().padStart(2, '0');
-            const label = `${minutes}:${seconds}`;
-            const target = document.getElementById('remainingTimeLabel');
-            if (target) {
-                target.innerText = label;
+            targets.forEach(t => { t.innerText = `${minutes}:${seconds}`; });
+        },
+
+        async toggleRespectTime() {
+            this.respectTime = !this.respectTime;
+            this.startTimer(); // restarts or stops countdown
+            if (this.timeModeUrl) {
+                const csrf = document.querySelector('meta[name=csrf-token]')?.content || '';
+                await fetch(this.timeModeUrl, {
+                    method: 'PATCH',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json' },
+                });
             }
+            // Update the toggle button visual
+            const btn = document.getElementById('timeModeToggleBtn');
+            if (btn) btn.classList.toggle('time-mode-off', !this.respectTime);
         },
 
         optionLabel(optionId) {

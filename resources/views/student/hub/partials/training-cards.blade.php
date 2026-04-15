@@ -49,6 +49,7 @@
             };
 
             $scoreValue = is_null($row['best_score']) ? '-' : $row['best_score'] . '%';
+            $scoreRaw   = $row['best_score'] ?? 0;
 
             $attemptTone = match (true) {
                 $row['attempts'] === 0 => 'training-model-badge-muted',
@@ -62,106 +63,182 @@
                 default => 'training-model-badge-good',
             };
 
-            $levelBadge = strtoupper(trim((string) ($item->level ?? '')));
+            $levelBadge   = strtoupper(trim((string) ($item->level ?? '')));
+            $sectionClass = 'tcm-section-' . $item->section_type;
+
+            $sectionCode = match ($item->section_type) {
+                'lesen'           => 'LES',
+                'sprachbausteine' => 'SPR',
+                'hoeren'          => 'HÖR',
+                'schreiben'       => 'SCH',
+                default           => strtoupper(substr((string) $item->section_type, 0, 3)),
+            };
+
+            $attemptsText = match(true) {
+                $row['attempts'] === 0 => 'لم يبدأ',
+                $row['attempts'] === 1 => 'مرة ×١',
+                default => '×' . $row['attempts'],
+            };
+
+            $durationMinutes = match ($item->section_type) {
+                'hoeren'    => 17,
+                'schreiben' => 30,
+                default     => 20,
+            };
         @endphp
 
-    <article class="training-model-card hub-float-in">
-        <div class="training-model-mobile-head">
-            <div class="training-model-head">
-                <div class="mb-2 flex items-center justify-end gap-2">
-                    @if($levelBadge !== '')
-                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">
-                            {{ $levelBadge }}
-                        </span>
+    <article class="training-model-card hub-float-in {{ $sectionClass }}">
+
+        {{-- ════════════════════════════════
+             MOBILE CARD (hidden on desktop)
+             ════════════════════════════════ --}}
+        <div class="tcm-row" dir="rtl"
+             x-data="{
+                 respectTime: {{ $row['my_respect_time'] ? 'true' : 'false' }},
+                 saving: false,
+                 async toggleTime() {
+                     if (this.saving) return;
+                     this.respectTime = !this.respectTime;
+                     this.saving = true;
+                     try {
+                         await fetch('{{ route('training.models.rate', $item) }}', {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                             body: JSON.stringify({ respect_time: this.respectTime })
+                         });
+                     } finally { this.saving = false; }
+                 }
+             }">
+
+            {{-- Score panel: gradient slab --}}
+            <div class="tcm-score {{ $sectionClass }}">
+                <span class="tcm-score-code">{{ $sectionCode }}</span>
+                <span class="tcm-score-num">
+                    @if(is_null($row['best_score']))
+                        <span class="tcm-score-dash">—</span>
+                    @else
+                        {{ $row['best_score'] }}<span class="tcm-score-pct">%</span>
                     @endif
-                    <span class="training-model-status {{ $statusClass }}">{{ $statusLabel }}</span>
-                </div>
-
-                <h3 class="training-model-title" title="{{ $displayTitle }}">{{ $displayTitle }}</h3>
-                <p class="training-model-subtitle" title="{{ $partLabel }}">{{ $partLabel }}</p>
-            </div>
-        </div>
-
-        <div class="training-model-mobile-pill-row">
-            <span class="training-model-pill">{{ $partLabel }}</span>
-            @if($levelBadge !== '')
-                <span class="training-model-pill" style="background:#eef2ff;color:#4338ca;">
-                    {{ $levelBadge }}
                 </span>
-            @endif
-        </div>
-
-        <div class="training-model-mobile-metrics">
-            <div class="training-model-badge {{ $attemptTone }}">
-                <span class="training-model-badge-value">{{ $row['attempts'] }}</span>
-                <span class="training-model-badge-label">المحاولات</span>
+                {{-- Progress arc: thin ring around score --}}
+                <svg class="tcm-arc" viewBox="0 0 36 36" aria-hidden="true">
+                    <circle class="tcm-arc-bg" cx="18" cy="18" r="14" fill="none" stroke-width="2.5"/>
+                    <circle class="tcm-arc-fill" cx="18" cy="18" r="14" fill="none" stroke-width="2.5"
+                        stroke-dasharray="{{ round($scoreRaw * 87.96 / 100, 1) }} 87.96"
+                        stroke-dashoffset="21.99"
+                        stroke-linecap="round"/>
+                </svg>
             </div>
 
-            <div class="training-model-badge {{ $scoreTone }}">
-                <span class="training-model-badge-value">{{ $scoreValue }}</span>
-                <span class="training-model-badge-label">أفضل نتيجة</span>
-            </div>
-        </div>
+            {{-- Info block --}}
+            <div class="tcm-info">
+                <div class="tcm-top-row">
+                    <h3 class="tcm-title">{{ $displayTitle }}</h3>
+                    <span class="tcm-status {{ $statusClass }}">{{ $statusLabel }}</span>
+                </div>
+                <p class="tcm-sub">{{ $item->part_title ?? $sectionLabel }}@if($levelBadge !== '') · <span class="tcm-level">{{ $levelBadge }}</span>@endif</p>
 
-        <div class="training-model-mobile-progress">
-            <div class="training-model-stars-wrap">
-                <div class="training-model-stars">
+                {{-- Interactive shuriken rating --}}
+                <div class="tcm-rating"
+                     x-data="{
+                         rating: {{ $row['my_rating'] }},
+                         hover: 0,
+                         saving: false,
+                         async rate(val) {
+                             if (this.saving) return;
+                             this.rating = val;
+                             this.saving = true;
+                             try {
+                                 await fetch('{{ route('training.models.rate', $item) }}', {
+                                     method: 'POST',
+                                     headers: {
+                                         'Content-Type': 'application/json',
+                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                                     },
+                                     body: JSON.stringify({ rating: val })
+                                 });
+                             } finally { this.saving = false; }
+                         }
+                     }">
+                    <span class="tcm-rating-label">صعوبة:</span>
                     @for ($i = 1; $i <= 5; $i++)
-                        <span class="training-model-star {{ $i <= $difficultyStars ? 'is-active' : '' }}">★</span>
+                        <button type="button"
+                                class="tcm-shuriken-btn"
+                                @mouseenter="hover = {{ $i }}"
+                                @mouseleave="hover = 0"
+                                @click="rate({{ $i }})"
+                                :class="{ 'tcm-shuriken-active': (hover || rating) >= {{ $i }}, 'tcm-shuriken-saving': saving }"
+                                aria-label="تقييم {{ $i }}">
+                            <svg viewBox="0 0 20 20" class="tcm-shuriken-svg">
+                                <path d="M10 1.5 L11.6 8.4 L18.5 10 L11.6 11.6 L10 18.5 L8.4 11.6 L1.5 10 L8.4 8.4 Z"
+                                      transform="rotate(22.5 10 10)"/>
+                            </svg>
+                        </button>
                     @endfor
                 </div>
-                <span class="training-model-difficulty">{{ $difficultyLabelAr }}</span>
-            </div>
-        </div>
 
-        <div class="training-model-card-footer">
-            <div class="training-model-section-chip">
-                {{ $item->section_type === 'lesen' ? 'Lesen' : ($item->section_type === 'sprachbausteine' ? 'Sprachbausteine' : ($item->section_type === 'hoeren' ? 'الاستماع' : 'Schreiben')) }}
-            </div>
+                {{-- Bottom row: attempts + duration + time toggle + print --}}
+                <div class="tcm-bottom-row">
+                    <span class="tcm-attempts">{{ $attemptsText }}</span>
 
-            <div class="hub-inline-actions">
-                <form method="POST" action="{{ route('training.models.start', $item) }}" class="training-action-form">
-                    @csrf
-                    <button title="ابدأ" class="hub-outline-action" type="submit" aria-label="ابدأ">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                            <path d="M8 6.5v11l8.5-5.5L8 6.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    {{-- Duration chip --}}
+                    <span class="tcm-duration">
+                        <svg viewBox="0 0 16 16" fill="none" class="tcm-duration-icon">
+                            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M8 5v3l1.8 1.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {{ $durationMinutes }}د
+                    </span>
+
+                    {{-- Time respect toggle --}}
+                    <button type="button"
+                            @click="toggleTime()"
+                            :class="{ 'tcm-time-off': !respectTime }"
+                            class="tcm-time-toggle"
+                            :title="respectTime ? 'إيقاف توقيت' : 'تفعيل التوقيت'">
+                        <svg viewBox="0 0 16 16" fill="none" class="tcm-time-icon">
+                            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/>
+                            <path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path x-show="!respectTime" d="M2.5 2.5l11 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" class="tcm-time-slash"/>
                         </svg>
                     </button>
-                </form>
-                @php
-                    $printableTypes = [
-                        \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
-                        \App\Models\ExamPart::TYPE_READING_TEXT_MCQ,
-                        \App\Models\ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X,
-                        \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ,
-                        \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_POOL_GAP_MATCH,
-                    ];
-                @endphp
-                @if (in_array($item->part_type, $printableTypes, true))
-                    <a title="طباعة" href="{{ route('training.models.print', $item) }}" target="_blank" class="hub-outline-action" aria-label="طباعة">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                            <path d="M7 8V5.5A1.5 1.5 0 0 1 8.5 4h7A1.5 1.5 0 0 1 17 5.5V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                            <rect x="5" y="14" width="14" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-                            <rect x="4" y="8" width="16" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/>
-                            <path d="M8 17h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </a>
-                @endif
 
-                <a title="جدولة" href="{{ route('training.builder') }}" class="hub-outline-action" aria-label="جدولة">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/>
-                        <path d="M12 8v4l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
-
-                <a title="مفضلة" href="{{ route('training.builder') }}" class="hub-outline-action" aria-label="مفضلة">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <path d="m12 4 2.35 4.76 5.25.76-3.8 3.7.9 5.23L12 16l-4.7 2.45.9-5.23-3.8-3.7 5.25-.76L12 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                    </svg>
-                </a>
+                    @php
+                        $printableTypes = [
+                            \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS,
+                            \App\Models\ExamPart::TYPE_READING_TEXT_MCQ,
+                            \App\Models\ExamPart::TYPE_SITUATIONS_TO_ADS_WITH_X,
+                            \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_EMAIL_GAP_MCQ,
+                            \App\Models\ExamPart::TYPE_SPRACHBAUSTEINE_POOL_GAP_MATCH,
+                        ];
+                    @endphp
+                    @if (in_array($item->part_type, $printableTypes, true))
+                        <a href="{{ route('training.models.print', $item) }}" target="_blank"
+                           class="tcm-print-btn" aria-label="طباعة" title="طباعة">
+                            <svg viewBox="0 0 20 20" fill="none">
+                                <path d="M6 7V4.5A1 1 0 0 1 7 3.5h6A1 1 0 0 1 14 4.5V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <rect x="3.5" y="11" width="13" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="3" y="7" width="14" height="5.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M7 14h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </a>
+                    @endif
+                </div>
             </div>
+
+            {{-- Play button (passes respect_time preference) --}}
+            <form method="POST" action="{{ route('training.models.start', $item) }}" class="tcm-play-form">
+                @csrf
+                <input type="hidden" name="respect_time" :value="respectTime ? '1' : '0'">
+                <button type="submit" class="tcm-play {{ $sectionClass }}" aria-label="ابدأ">
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path d="M7 5.5v9l7.5-4.5L7 5.5Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </form>
         </div>
+
+
     </article>
     @empty
         <div class="training-models-empty">

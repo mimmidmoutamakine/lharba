@@ -6,109 +6,125 @@
     <title>Prufung versendet</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#d9d9d9] text-slate-900">
-    <main class="flex min-h-screen items-center justify-center px-6 py-12">
-        <section class="w-full max-w-[1280px] border border-slate-400 bg-[#35557f] px-8 py-10 text-center text-white shadow-2xl">
-            <div class="mx-auto flex h-28 w-28 items-center justify-center rounded bg-[#d81d2a] text-center text-white">
-                <div>
-                    <div class="text-5xl font-bold leading-none">Lharba</div>
-                    <div class="text-[10px] tracking-wide">liman istata3</div>
-                </div>
-            </div>
+<body class="bg-zinc-50 text-slate-900">
+    <main class="min-h-screen px-4 py-8 sm:px-6 sm:py-12">
+        <div class="mx-auto max-w-[1280px] space-y-5">
 
-            @if(!empty($isSurvival))
-                <div class="mt-6 text-[40px] font-semibold leading-tight">
-                    Survival Mode - Runde {{ $survivalRound }}
+            {{-- Header card --}}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                <div class="border-b border-l-4 border-slate-200 border-l-[#d62828] bg-[#112442] px-5 py-6 sm:px-8">
+                    <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+
+                        <div class="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-[#d62828] text-center text-white">
+                            <div>
+                                <div class="text-2xl font-bold leading-none">Lharba</div>
+                                <div class="text-[8px] tracking-widest opacity-80">liman istata3</div>
+                            </div>
+                        </div>
+
+                        <div class="text-center sm:text-left">
+                            @if(!empty($isSurvival))
+                                <div class="text-2xl font-bold text-white sm:text-3xl">
+                                    Survival Mode — Runde {{ $survivalRound }}
+                                </div>
+                                <div class="mt-1 text-base text-slate-300 sm:text-lg">
+                                    @if(!empty($survivalPassed))
+                                        Runde bestanden. Bereit fur die nachste Runde?
+                                    @else
+                                        Runde nicht bestanden. Challenge beendet.
+                                    @endif
+                                </div>
+                            @else
+                                <div class="text-xl font-bold text-white sm:text-3xl" dir="rtl">
+                                    تــيلك بــحر وقلال نينجاوات
+                                </div>
+                                <div class="mt-1 text-sm text-slate-300 sm:text-base" dir="rtl">
+                                    شوف فالأسفل الأجوبة ديالك والحلول ديالهم ولا ضغط على تصحيح باش تراجع الإمتحان
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-                <div class="text-[28px] font-medium leading-tight">
-                    @if(!empty($survivalPassed))
-                        Runde bestanden. Bereit fur die nachste Runde?
-                    @else
-                        Runde nicht bestanden. Challenge beendet.
+
+                {{-- Action buttons --}}
+                <div class="flex flex-wrap items-center justify-center gap-3 px-5 py-5 sm:px-8">
+                    @if(!empty($isSurvival) && !empty($survivalPassed))
+                        <form method="POST" action="{{ route('challenge.start') }}" class="inline-flex">
+                            @csrf
+                            <input type="hidden" name="round" value="{{ (int) $survivalRound + 1 }}">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-xl bg-[#d62828] px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-red-700">
+                                Nachste Runde starten
+                            </button>
+                        </form>
                     @endif
-                </div>
-            @else
-                <div class="mt-6 text-[44px] font-semibold leading-tight">
-                    تــيلك بــحر وقلال نينجاوات
-                </div>
-                <div class="text-[28px] font-medium leading-tight">
-                    شوف فالأسفل الأجوبة ديالك والحلول ديالهم ولا ضغط  على تصحيح باش تراجع الإمتحان
-                </div>
-            @endif
 
-            <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-                @if(!empty($isSurvival) && !empty($survivalPassed))
-                    <form method="POST" action="{{ route('challenge.start') }}" class="inline-flex">
-                        @csrf
-                        <input type="hidden" name="round" value="{{ (int) $survivalRound + 1 }}">
-                        <button type="submit"
-                                class="inline-flex rounded-md border border-amber-300 bg-amber-500 px-9 py-4 text-[20px] font-semibold text-white shadow hover:bg-amber-600">
-                            Nachste Runde starten
-                        </button>
-                    </form>
-                @endif
+                    @if(!empty($retrainKeys))
+                        <form method="POST" action="{{ route('training.targeted') }}" class="inline-flex">
+                            @csrf
+                            @foreach($retrainKeys as $key)
+                                <input type="hidden" name="sections[]" value="{{ $key }}">
+                            @endforeach
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-xl bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-700">
+                                إعادة المحاولة
+                            </button>
+                        </form>
+                    @endif
 
-                @if(!empty($retrainKeys))
-                    <form method="POST" action="{{ route('training.targeted') }}" class="inline-flex">
-                        @csrf
-                        @foreach($retrainKeys as $key)
-                            <input type="hidden" name="sections[]" value="{{ $key }}">
-                        @endforeach
-                        <button type="submit"
-                                class="inline-flex rounded-md border border-emerald-300 bg-emerald-500 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-emerald-600">
-                            إعادة المحاولة
-                        </button>
-                    </form>
-                @endif
+                    @if(!empty($reviewStartPartId))
+                        <a href="{{ route('attempts.review.show', [$attempt, $reviewStartPartId]) }}"
+                           class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-sm hover:bg-slate-50">
+                            تصحيح
+                        </a>
+                    @endif
 
-                @if(!empty($reviewStartPartId))
-                    <a href="{{ route('attempts.review.show', [$attempt, $reviewStartPartId]) }}"
-                       class="inline-flex rounded-md border border-white/30 bg-white/10 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-white/20">
-                        تصحيح
+                    <a href="{{ route('progress.index') }}"
+                       class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-sm hover:bg-slate-50">
+                        إحصائيات
                     </a>
-                @endif
-                <a href="{{ route('progress.index') }}"
-                   class="inline-flex rounded-md border border-indigo-300 bg-indigo-500 px-6 py-3 text-lg font-semibold text-white shadow hover:bg-indigo-600">
-                    إحصائيات
-                </a>
 
-                <a href="{{ route('dashboard') }}"
-                   class="inline-flex rounded-md border border-blue-500 bg-[#11357b] px-6 py-3 text-lg font-semibold text-white shadow hover:bg-[#0f2f6d]">
-                    الصفحة الرئيسية
-                </a>
+                    <a href="{{ route('dashboard') }}"
+                       class="inline-flex items-center rounded-xl bg-slate-800 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-700">
+                        الصفحة الرئيسية
+                    </a>
+                </div>
             </div>
 
+            {{-- Answer review --}}
             @if(!empty($reviewParts))
-                <div class="mt-10 space-y-5 text-left text-slate-900">
-                    <h2 class="text-center text-3xl font-bold text-white">Antwort-Review</h2>
+                <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-slate-900 sm:text-2xl">Antwort-Review</h2>
                     @foreach($reviewParts as $part)
-                        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow">
-                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                <h3 class="text-xl font-bold">{{ $part['title'] }}</h3>
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold">{{ $part['correct'] }}/{{ $part['total'] }} richtig</span>
+                        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
+                                <h3 class="text-base font-bold text-slate-900 sm:text-lg">{{ $part['title'] }}</h3>
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">
+                                    {{ $part['correct'] }}/{{ $part['total'] }} richtig
+                                </span>
                             </div>
 
                             <div class="overflow-x-auto">
                                 <table class="min-w-full border-collapse text-sm">
                                     <thead>
-                                        <tr class="bg-slate-100 text-left">
-                                            <th class="border border-slate-200 px-3 py-2">Aufgabe</th>
-                                            <th class="border border-slate-200 px-3 py-2">Ihre Antwort</th>
-                                            <th class="border border-slate-200 px-3 py-2">Richtig</th>
-                                            <th class="border border-slate-200 px-3 py-2">Status</th>
+                                        <tr class="bg-slate-50 text-left">
+                                            <th class="border-b border-slate-200 px-4 py-3 font-semibold text-slate-600">Aufgabe</th>
+                                            <th class="border-b border-slate-200 px-4 py-3 font-semibold text-slate-600">Ihre Antwort</th>
+                                            <th class="border-b border-slate-200 px-4 py-3 font-semibold text-slate-600">Richtig</th>
+                                            <th class="border-b border-slate-200 px-4 py-3 font-semibold text-slate-600">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($part['items'] as $item)
-                                            <tr class="{{ $item['ok'] ? 'bg-emerald-50' : 'bg-rose-50' }}">
-                                                <td class="border border-slate-200 px-3 py-2 font-medium">{{ $item['label'] }}</td>
-                                                <td class="border border-slate-200 px-3 py-2">{{ $item['your'] }}</td>
-                                                <td class="border border-slate-200 px-3 py-2 font-semibold">{{ $item['correct'] }}</td>
-                                                <td class="border border-slate-200 px-3 py-2">
+                                            <tr class="border-b border-slate-100 last:border-0 {{ $item['ok'] ? 'bg-emerald-50/60' : 'bg-rose-50/60' }}">
+                                                <td class="px-4 py-3 font-medium text-slate-900">{{ $item['label'] }}</td>
+                                                <td class="px-4 py-3 text-slate-700">{{ $item['your'] }}</td>
+                                                <td class="px-4 py-3 font-semibold text-slate-900">{{ $item['correct'] }}</td>
+                                                <td class="px-4 py-3">
                                                     @if($item['ok'])
-                                                        <span class="rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">Richtig</span>
+                                                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Richtig</span>
                                                     @else
-                                                        <span class="rounded bg-rose-600 px-2 py-1 text-xs font-semibold text-white">Falsch</span>
+                                                        <span class="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">Falsch</span>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -120,7 +136,8 @@
                     @endforeach
                 </div>
             @endif
-        </section>
+
+        </div>
     </main>
 </body>
 </html>

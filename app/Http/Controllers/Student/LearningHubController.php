@@ -7,6 +7,7 @@ use App\Models\AttemptAnswer;
 use App\Models\ExamAttempt;
 use App\Models\ExamSection;
 use App\Models\PartBankItem;
+use App\Models\StudentDifficultyRating;
 use App\Services\PracticeExamBuilderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -98,9 +99,18 @@ class LearningHubController extends Controller
         }
 
         $models = $query->orderBy('title')->get();
+        $modelIds = $models->pluck('id')->all();
 
-        $stats = $this->buildModelStats($models->pluck('id')->all());
-        $rows = $models->map(function (PartBankItem $item) use ($stats) {
+        $stats = $this->buildModelStats($modelIds);
+
+        $userId = (int) Auth::id();
+        $myRatings = StudentDifficultyRating::query()
+            ->where('user_id', $userId)
+            ->whereIn('part_bank_item_id', $modelIds)
+            ->get(['part_bank_item_id', 'rating', 'respect_time'])
+            ->keyBy('part_bank_item_id');
+
+        $rows = $models->map(function (PartBankItem $item) use ($stats, $myRatings) {
             $modelStats = $stats[$item->id] ?? ['attempts' => 0, 'best_score' => null];
             $bestScore = $modelStats['best_score'];
             $status = $modelStats['attempts'] === 0
@@ -114,6 +124,8 @@ class LearningHubController extends Controller
                 'best_score' => $bestScore,
                 'status' => $status,
                 'difficulty' => $difficulty,
+                'my_rating'        => (int) ($myRatings[$item->id]?->rating ?? 0),
+                'my_respect_time'  => (bool) ($myRatings[$item->id]?->respect_time ?? true),
             ];
         })->values();
 
@@ -137,7 +149,8 @@ class LearningHubController extends Controller
                 'html' => view('student.hub.partials.training-cards', [
                     'rows' => $rows,
                 ])->render(),
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache')
+              ->header('Vary', 'X-Requested-With, Accept');
         }
 
         return view('student.hub.training', [
@@ -264,9 +277,33 @@ class LearningHubController extends Controller
 
         abort_unless(in_array((int) $model->id, $allowedIds, true), 403);
 
+        $respectTime = $request->boolean('respect_time', true);
+        session()->flash('pending_respect_time', $respectTime);
+
         $exam = $builder->createFromBankItems(Auth::user(), collect([$model]), 'Model Practice');
 
         return redirect()->route('exams.start', $exam);
+    }
+
+    public function rateModel(Request $request, PartBankItem $model): JsonResponse
+    {
+        $data = $request->validate([
+            'rating'       => 'sometimes|integer|min:1|max:5',
+            'respect_time' => 'sometimes|boolean',
+        ]);
+
+        $update = [];
+        if (isset($data['rating']))       $update['rating']       = (int) $data['rating'];
+        if (isset($data['respect_time'])) $update['respect_time'] = (bool) $data['respect_time'];
+
+        if (! empty($update)) {
+            StudentDifficultyRating::updateOrCreate(
+                ['user_id' => (int) Auth::id(), 'part_bank_item_id' => $model->id],
+                $update,
+            );
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function continuePlan(PracticeExamBuilderService $builder): RedirectResponse

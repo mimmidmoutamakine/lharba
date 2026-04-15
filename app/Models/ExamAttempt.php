@@ -24,6 +24,7 @@ class ExamAttempt extends Model
         'schreiben_remaining_seconds',
         'schreiben_last_synced_at',
         'status',
+        'respect_time',
     ];
 
     protected function casts(): array
@@ -33,6 +34,7 @@ class ExamAttempt extends Model
             'submitted_at' => 'datetime',
             'hoeren_last_synced_at' => 'datetime',
             'schreiben_last_synced_at' => 'datetime',
+            'respect_time' => 'boolean',
         ];
     }
 
