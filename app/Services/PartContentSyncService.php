@@ -384,8 +384,8 @@ class PartContentSyncService
                     'sort_order' => (int) ($question['sort_order'] ?? ($index + 1)),
                 ]);
                 foreach (($question['options'] ?? []) as $optionIndex => $option) {
-                    \App\Models\SprachGapOption::create([
-                        'sprach_gap_question_id' => $questionModel->id,
+                    \App\Models\LesenMcqOption::create([
+                        'lesen_mcq_question_id' => $questionModel->id,
                         'option_key' => (string) ($option['option_key'] ?? ''),
                         'option_text' => (string) ($option['option_text'] ?? ''),
                         'is_correct' => (bool) ($option['is_correct'] ?? false),

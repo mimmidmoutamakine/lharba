@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Remove orphaned sprach_gap_options whose parent question no longer exists.
-        // This can happen when the questions table is truncated (e.g. migrate:fresh)
-        // which bypasses FK cascades and leaves stale option rows behind.
+        // Remove rows in sprach_gap_options whose sprach_gap_question_id does not
+        // correspond to any real sprach_gap_questions row. These were created by a
+        // copy-paste bug in PartContentSyncService where TYPE_READING_TEXT_MCQ
+        // mistakenly used SprachGapOption instead of LesenMcqOption.
         \DB::statement('
             DELETE FROM sprach_gap_options
             WHERE sprach_gap_question_id NOT IN (SELECT id FROM sprach_gap_questions)
