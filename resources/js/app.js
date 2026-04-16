@@ -220,6 +220,23 @@ window.showSessionExpiredBanner = function () {
     }, 4 * 60 * 1000);
 })();
 
+// Dark mode toggle
+window.toggleDarkMode = function () {
+    const html = document.getElementById('html-root');
+    const isDark = html.classList.toggle('dark');
+    localStorage.setItem('telc_dark_mode', isDark ? 'dark' : 'light');
+    // sync all toggle button icons
+    document.querySelectorAll('[id^="darkIcon"]').forEach(function (el) { el.classList.toggle('hidden', isDark); });
+    document.querySelectorAll('[id^="lightIcon"]').forEach(function (el) { el.classList.toggle('hidden', !isDark); });
+};
+
+// Sync toggle icons on load
+document.addEventListener('DOMContentLoaded', function () {
+    const isDark = document.getElementById('html-root')?.classList.contains('dark');
+    document.querySelectorAll('[id^="darkIcon"]').forEach(function (el) { el.classList.toggle('hidden', isDark); });
+    document.querySelectorAll('[id^="lightIcon"]').forEach(function (el) { el.classList.toggle('hidden', !isDark); });
+});
+
 window.Alpine = Alpine;
 
 Alpine.start();

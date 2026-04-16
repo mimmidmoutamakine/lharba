@@ -23,6 +23,17 @@
                             </span>
                         </x-nav-link>
 
+                        <x-nav-link :href="route('training.index')" :active="request()->routeIs('training.*', 'attempts.*', 'exams.*')">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                    <path d="M10 8l6 4-6 4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="currentColor" opacity=".25"/>
+                                    <path d="M10 8l6 4-6 4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                </svg>
+                                <span>تدريب</span>
+                            </span>
+                        </x-nav-link>
+
                         <x-nav-link :href="route('hub.lessons')" :active="request()->routeIs('hub.lessons')">
                             <span class="inline-flex items-center gap-2">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -70,6 +81,23 @@
             </div>
 
             <div class="hidden items-center gap-3 sm:flex">
+                <!-- Dark mode toggle (desktop) -->
+                <button
+                    id="darkModeToggleDesktop"
+                    onclick="window.toggleDarkMode()"
+                    class="dark-mode-toggle-btn"
+                    title="تبديل الوضع الليلي"
+                    aria-label="تبديل الوضع الليلي"
+                >
+                    <svg id="darkIconDesktop" class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <svg id="lightIconDesktop" class="h-4 w-4 hidden" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </button>
+
                 <x-dropdown align="right" width="56">
                     <x-slot name="trigger">
                         <button class="app-user-button">
@@ -90,6 +118,15 @@
                         <div class="px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400">
                             {{ Auth::user()->email }}
                         </div>
+                        @if ($showStudentLinks)
+                            <x-dropdown-link :href="route('hub.home')">
+                                الرئيسية
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('training.index')">
+                                تدريب
+                            </x-dropdown-link>
+                            <div class="my-1 border-t border-slate-100 dark:border-white/10"></div>
+                        @endif
                         <x-dropdown-link :href="route('profile.edit')">
                             تعديل الملف الشخصي
                         </x-dropdown-link>
@@ -105,7 +142,7 @@
             </div>
 
             <div class="flex items-center sm:hidden">
-                <button @click="open = ! open" class="rounded-2xl border border-black/10 bg-white/80 p-2 text-slate-700 transition hover:bg-white hover:text-slate-950">
+                <button @click="open = ! open" class="app-nav-hamburger-btn rounded-2xl border border-black/10 bg-white/80 p-2 text-slate-700 transition hover:bg-white hover:text-slate-950">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -115,11 +152,14 @@
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-black/5 bg-white/90 sm:hidden">
+    <div :class="{'block': open, 'hidden': ! open}" class="app-nav-mobile-panel hidden border-t border-black/5 bg-white/90 sm:hidden">
         <div class="app-nav-inner space-y-3 py-4">
             @if ($showStudentLinks)
                 <x-responsive-nav-link :href="route('hub.home')" :active="request()->routeIs('dashboard', 'hub.home')">
                     الرئيسية
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('training.index')" :active="request()->routeIs('training.*', 'attempts.*', 'exams.*')">
+                    تدريب
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hub.lessons')" :active="request()->routeIs('hub.lessons')">
                     دروس
@@ -138,9 +178,27 @@
                 </x-responsive-nav-link>
             @endif
 
-            <div class="rounded-2xl border border-black/5 bg-white px-4 py-3">
-                <div class="text-sm font-semibold text-slate-900">{{ Auth::user()->name }}</div>
-                <div class="mt-1 text-xs text-slate-500">{{ Auth::user()->email }}</div>
+            <div class="rounded-2xl border border-black/5 bg-white dark:border-white/10 dark:bg-slate-800 px-4 py-3 flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ Auth::user()->name }}</div>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Auth::user()->email }}</div>
+                </div>
+                <!-- Dark mode toggle (mobile) -->
+                <button
+                    id="darkModeToggleMobile"
+                    onclick="window.toggleDarkMode()"
+                    class="dark-mode-toggle-btn"
+                    title="تبديل الوضع الليلي"
+                    aria-label="تبديل الوضع الليلي"
+                >
+                    <svg id="darkIconMobile" class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <svg id="lightIconMobile" class="h-4 w-4 hidden" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </button>
             </div>
 
             <div class="space-y-2">

@@ -16,9 +16,23 @@
 @endunless
 
 <header class="border-b border-slate-700 bg-[#112442] text-white shadow-lg">
+    {{-- Breadcrumb bar --}}
+    <div class="mx-auto max-w-[1650px] px-3 pt-2 sm:px-4">
+        <div class="flex items-center gap-2 text-xs text-slate-400">
+            <a href="{{ route('training.index') }}" class="flex items-center gap-1 hover:text-white transition-colors">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>تدريب</span>
+            </a>
+            <span class="opacity-40">/</span>
+            <span class="truncate text-slate-300 font-medium">{{ $exam->title }}</span>
+        </div>
+    </div>
+
     <div class="mx-auto max-w-[1650px] px-3 py-2 sm:px-4">
         <div class="flex flex-col gap-3 md:flex-row md:items-stretch md:justify-between">
-            
+
             <div class="flex min-w-0 items-center gap-3">
                 <div class="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-[#d81d2a] text-center text-white sm:h-16 sm:w-24">
                     <div>
@@ -28,7 +42,8 @@
                 </div>
 
                 <div class="min-w-0 flex-1 md:hidden">
-                    <div class="truncate text-lg font-semibold">Deutsch - {{ strtoupper($exam->level) }}</div>
+                    <div class="truncate text-lg font-semibold">{{ $exam->title }}</div>
+                    <div class="text-xs text-slate-400">Deutsch - {{ strtoupper($exam->level) }}</div>
                     @if (!$reviewMode)
                         <div class="flex items-center gap-1.5 text-sm text-slate-200">
                             <button onclick="window.dispatchEvent(new CustomEvent('exam-time-toggle'))"
@@ -67,7 +82,10 @@
             </div>
 
             <div class="space-y-2 md:w-[300px] md:text-right">
-                <div class="hidden text-xl font-semibold md:block">Deutsch - {{ strtoupper($exam->level) }}</div>
+                <div class="hidden md:block">
+                    <div class="truncate text-base font-semibold">{{ $exam->title }}</div>
+                    <div class="text-xs text-slate-400">Deutsch - {{ strtoupper($exam->level) }}</div>
+                </div>
 
                 @if ($reviewMode)
                     <div class="flex md:justify-end">
@@ -117,5 +135,6 @@
                 />
             </div>
         </div>
+    </div>
     </div>
 </header>
