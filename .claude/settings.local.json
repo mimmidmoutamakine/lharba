@@ -15,7 +15,10 @@
       "Bash(grep -n \"rating\\\\|respect_time\" database/migrations/*student_difficulty*)",
       "Bash(grep -rn \"^namespace App\\\\\\\\\\\\Http\\\\\\\\\\\\Controllers\\\\\\\\\\\\Student\" app/Http/Controllers/Admin/)",
       "Bash(grep -rn \"^namespace App\\\\\\\\\\\\Http\\\\\\\\\\\\Controllers\\\\\\\\\\\\Admin\" app/Http/Controllers/Student/)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -n \"sprach_gap_questions\" database/migrations/*.php)",
+      "Bash(cat database/migrations/2026_03_0*sprach_gap_options*)",
+      "Bash(xargs cat *)"
     ]
   }
 }
