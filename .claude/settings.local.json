@@ -14,7 +14,8 @@
       "Bash(sed -n '128,150p' resources/js/exam-writing.js)",
       "Bash(grep -n \"rating\\\\|respect_time\" database/migrations/*student_difficulty*)",
       "Bash(grep -rn \"^namespace App\\\\\\\\\\\\Http\\\\\\\\\\\\Controllers\\\\\\\\\\\\Student\" app/Http/Controllers/Admin/)",
-      "Bash(grep -rn \"^namespace App\\\\\\\\\\\\Http\\\\\\\\\\\\Controllers\\\\\\\\\\\\Admin\" app/Http/Controllers/Student/)"
+      "Bash(grep -rn \"^namespace App\\\\\\\\\\\\Http\\\\\\\\\\\\Controllers\\\\\\\\\\\\Admin\" app/Http/Controllers/Student/)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }
