@@ -232,7 +232,9 @@ window.toggleDarkMode = function () {
 
 // Sync toggle icons on load
 document.addEventListener('DOMContentLoaded', function () {
-    const isDark = document.getElementById('html-root')?.classList.contains('dark');
+    const htmlRoot = document.getElementById('html-root');
+    if (!htmlRoot) return;
+    const isDark = htmlRoot.classList.contains('dark');
     document.querySelectorAll('[id^="darkIcon"]').forEach(function (el) { el.classList.toggle('hidden', isDark); });
     document.querySelectorAll('[id^="lightIcon"]').forEach(function (el) { el.classList.toggle('hidden', !isDark); });
 });
