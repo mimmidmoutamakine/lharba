@@ -457,6 +457,8 @@ class PartContentSyncService
                     'gap_number' => (int) ($question['gap_number'] ?? ($index + 1)),
                     'sort_order' => (int) ($question['sort_order'] ?? ($index + 1)),
                 ]);
+                // Guard against orphaned options from a prior truncate/reset on this question ID.
+                \App\Models\SprachGapOption::where('sprach_gap_question_id', $questionModel->id)->delete();
                 foreach (($question['options'] ?? []) as $optionIndex => $option) {
                     \App\Models\SprachGapOption::create([
                         'sprach_gap_question_id' => $questionModel->id,
