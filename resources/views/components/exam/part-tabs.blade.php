@@ -27,7 +27,7 @@
         @endphp
         <a href="{{ route($routeName, [$attempt, $tabPart]) }}"
            data-part-tab-link="1"
-           class="relative min-w-[145px] rounded-md border px-3 py-1.5 text-center text-xs font-semibold {{ $isCurrent ? 'border-white bg-white text-slate-900' : 'border-white/25 bg-white/10 text-white hover:bg-white/20' }}">
+           class="relative min-w-[145px] rounded-md border px-3 py-1.5 text-center text-xs font-semibold {{ $isCurrent ? 'border-white bg-white text-slate-900' : 'border-slate-500 bg-slate-400/60 text-slate-900 hover:bg-slate-300' }}">
             <div>{{ $tabPart->section->title }}</div>
             <div>{{ $tabPart->title }}</div>
             <div class="text-xs font-medium">({{ $tabPart->points }} Punkte)</div>

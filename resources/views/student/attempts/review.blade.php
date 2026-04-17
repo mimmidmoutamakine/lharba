@@ -10,6 +10,7 @@
 <x-exam.header
     :attempt="$attempt"
     :exam="$attempt->exam"
+    :current-part="$part"
     :part-tabs="$partTabs"
     :current-part-id="$part->id"
     :completed-part-ids="$completedPartIds"

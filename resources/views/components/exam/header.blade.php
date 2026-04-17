@@ -1,12 +1,24 @@
 @props([
     'attempt',
     'exam',
+    'currentPart' => null,
     'partTabs' => collect(),
     'currentPartId' => null,
     'completedPartIds' => [],
     'audioUrl' => null,
     'reviewMode' => false,
 ])
+
+@php
+    $breadcrumbPart = $currentPart ?? $partTabs->firstWhere('id', $currentPartId);
+    $breadcrumbSection = $breadcrumbPart?->section?->title ?? '';
+    $breadcrumbPartTitle = $breadcrumbPart?->title ?? '';
+    $breadcrumbContentTitle = $breadcrumbPart?->bankItem?->source_label ?? '';
+    $breadcrumb = trim($breadcrumbSection . ' ' . $breadcrumbPartTitle);
+    if ($breadcrumbContentTitle) {
+        $breadcrumb .= ': ' . $breadcrumbContentTitle;
+    }
+@endphp
 
 @unless($reviewMode)
 <script>
@@ -16,6 +28,20 @@
 @endunless
 
 <header class="border-b border-slate-700 bg-[#112442] text-white shadow-lg">
+    @if($breadcrumb)
+    <div class="mx-auto max-w-[1650px] px-3 pt-1.5 sm:px-4">
+        <div class="flex items-center gap-1.5 text-xs text-slate-400">
+            <a href="{{ route('training.index') }}" class="flex items-center gap-1 hover:text-white transition-colors">
+                <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>تدريب</span>
+            </a>
+            <span class="opacity-30">/</span>
+            <span class="truncate text-slate-300">{{ $breadcrumb }}</span>
+        </div>
+    </div>
+    @endif
     <div class="mx-auto max-w-[1650px] px-3 py-2 sm:px-4">
         <div class="flex flex-col gap-3 md:flex-row md:items-stretch md:justify-between">
 
@@ -119,3 +145,37 @@
         </div>
     </div>
 </header>
+
+@unless($reviewMode)
+{{-- Sentinel: sits just below the header; observed to know when header leaves viewport --}}
+<div id="examHeaderSentinel" class="h-px"></div>
+
+{{-- Mobile sticky action bar: slides up when header scrolls out of view --}}
+<div id="examMobileStickyBar"
+     class="fixed bottom-0 left-0 right-0 z-30 flex translate-y-full gap-2 bg-[#001332] px-4 py-2 shadow-lg transition-transform duration-300 md:hidden">
+    <button onclick="document.getElementById('submitAttemptButton').click()"
+            class="flex-1 rounded-md bg-blue-700 px-3 py-2.5 text-sm font-semibold text-white shadow active:bg-blue-800"
+            type="button">
+        ABGABE
+    </button>
+    <button onclick="document.getElementById('manualSaveButton').click()"
+            class="flex-1 rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white shadow active:bg-blue-700"
+            type="button">
+        SPEICHERN
+    </button>
+</div>
+
+<script>
+(function () {
+    var sentinel = document.getElementById('examHeaderSentinel');
+    var bar      = document.getElementById('examMobileStickyBar');
+    if (!sentinel || !bar) return;
+    var observer = new IntersectionObserver(function (entries) {
+        var headerVisible = entries[0].isIntersecting;
+        bar.classList.toggle('translate-y-full', headerVisible);
+        bar.classList.toggle('translate-y-0',    !headerVisible);
+    }, { threshold: 0 });
+    observer.observe(sentinel);
+})();
+</script>
+@endunless

@@ -7,7 +7,7 @@
     <title>{{ $attempt->exam->title }} - {{ $part->title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-zinc-50 text-slate-900 xl:pb-10">
+<body class="bg-[#d9d9d9] pb-[72px] text-slate-900 xl:pb-10">
 @if($part->part_type === \App\Models\ExamPart::TYPE_MATCHING_TITLES_TO_TEXTS)
 <div
     x-data="matchingEngine({
@@ -28,12 +28,13 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
         {{ $part->section->title }}, {{ strtoupper($part->title) }}
     </div>
 
@@ -107,7 +108,7 @@
         </section>
 
         <aside class="w-full xl:w-[620px]">
-            <div class="sticky top-6 rounded-2xl border border-slate-300 bg-white p-5 shadow-xl">
+            <div class="sticky top-6 rounded-2xl border border-slate-300 bg-[#eceef8] p-5 shadow-xl">
                 <div id="optionPool" class="space-y-3">
                     @foreach($part->lesenMatchingOptions as $option)
                         <x-exam.option-card :option="$option" />
@@ -148,7 +149,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+            class="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
         >
             <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
 
@@ -200,7 +201,7 @@
     </div>
 
     {{-- DESKTOP FOOTER ONLY --}}
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -227,12 +228,13 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
         {{ $part->section->title }}, {{ strtoupper($part->title) }}
     </div>
 
@@ -271,7 +273,7 @@
             <div class="space-y-3">
                 @foreach($part->lesenMcqQuestions as $index => $question)
                     <article
-                        class="rounded-xl border border-slate-300 bg-white p-4 shadow scroll-mt-[180px]"
+                        class="rounded-xl border border-slate-300 bg-[#eceef8] p-4 shadow scroll-mt-[180px]"
                         :class="mobileQuestionCardClass({{ $question->id }})"
                         id="question-{{ $question->id }}"
                     >
@@ -348,7 +350,7 @@
         <aside class="w-full xl:w-[600px]">
             <div class="space-y-2 pr-0.5">
                 @foreach($part->lesenMcqQuestions as $index => $question)
-                    <article class="rounded-xl border border-slate-300 bg-white p-3 shadow">
+                    <article class="rounded-xl border border-slate-300 bg-[#eceef8] p-3 shadow">
                         <h4 class="text-[17px] font-bold leading-tight">{{ $index + 1 }}. {{ $question->question_text }}</h4>
                         <div class="mt-1 space-y-0.5 text-[15px] leading-snug">
                             @foreach($question->options as $option)
@@ -386,7 +388,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
         >
             <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
 
@@ -416,7 +418,7 @@
     </div>
 
     {{-- DESKTOP FOOTER ONLY --}}
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -443,12 +445,13 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
         {{ $part->section->title }}, {{ strtoupper($part->title) }}
     </div>
 
@@ -494,7 +497,7 @@
                 @foreach($part->lesenSituations as $index => $situation)
                     <article
                         id="situation-{{ $situation->id }}"
-                        class="rounded-xl border border-slate-300 bg-white p-4 shadow scroll-mt-[185px]"
+                        class="rounded-xl border border-slate-300 bg-[#eceef8] p-4 shadow scroll-mt-[185px]"
                         :class="mobileSituationCardClass({{ $situation->id }})"
                     >
                         <div class="mb-3 flex items-start justify-between gap-3">
@@ -594,7 +597,7 @@
                                  @dragstart="dragStartAd({{ $ad->id }}, $event)"
                                  :class="adCardClass({{ $ad->id }})"
                                  @click="selectAd({{ $ad->id }})">
-                            <div class="mb-3 min-h-8 rounded border border-indigo-200 bg-indigo-50 px-3 py-2 text-xl font-bold text-slate-900"
+                            <div class="mb-3 min-h-8 rounded bg-[#b5b8ff] px-3 py-2 text-xl font-bold text-slate-900"
                                  :class="adHeaderClass({{ $ad->id }})"
                                  @click.stop="clearAdAssignment({{ $ad->id }})"
                                  x-text="adHeaderLabel({{ $ad->id }})"></div>
@@ -609,7 +612,7 @@
         </section>
 
         <aside class="w-full xl:w-[600px]">
-            <div class="rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
+            <div class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
                 @foreach($part->lesenSituations as $index => $situation)
                     <div class="mb-1.5 flex items-start gap-2 rounded-lg px-1.5 py-1"
                          @dragover.prevent
@@ -623,7 +626,7 @@
                                 @click.stop="toggleX({{ $situation->id }})"
                                 x-text="xButtonText({{ $situation->id }})"></button>
                         <div class="-ml-6 mt-7 text-sm font-bold text-slate-700">x</div>
-                        <div class="flex-1 rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[15px] font-semibold leading-snug"
+                        <div class="flex-1 rounded-md border border-indigo-300 bg-[#b5b8ff] px-2.5 py-1.5 text-[15px] font-semibold leading-snug"
                              :class="situationTextClass({{ $situation->id }})">
                             <div>{{ $situation->situation_text }}</div>
                         </div>
@@ -651,7 +654,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
         >
             <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
 
@@ -690,42 +693,45 @@
                 @endforeach
             </div>
 
-            <div class="space-y-3 overflow-y-auto pr-1" style="max-height: calc(85vh - 140px);">
+            <div class="space-y-2 overflow-y-auto pr-1" style="max-height: calc(85vh - 140px);">
                 @foreach($part->lesenSituationAds as $ad)
                     <article
+                        x-data="{ open: false }"
                         id="ad-mobile-{{ $ad->id }}"
-                        class="rounded-xl border border-slate-300 bg-white p-4 shadow scroll-mt-20 transition duration-200"
+                        class="cursor-pointer rounded-xl border border-slate-300 bg-white p-3 shadow scroll-mt-20 transition duration-200"
                         :class="mobileAdCardClass({{ $ad->id }})"
                         @click="assignAdDirectlyFromAdsSheet({{ $ad->id }})"
                     >
-                        <div class="mb-3 flex items-center justify-between gap-3">
-                            <div class="min-w-0 flex-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2">
-                                <div class="text-xl font-bold text-slate-900">
-                                    {{ $ad->label }}{{ $ad->title ? '. '.$ad->title : '' }}
+                        <div class="flex items-start gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="shrink-0 rounded-md border border-indigo-300 bg-[#b5b8ff] px-2 py-0.5 text-sm font-bold text-slate-900">
+                                        {{ $ad->label }}{{ $ad->title ? '.' : '' }}
+                                    </span>
+                                    @if($ad->title)
+                                        <span class="text-sm font-semibold text-slate-800">{{ $ad->title }}</span>
+                                    @endif
+                                    <template x-if="wasJustAssigned({{ $ad->id }})">
+                                        <span class="rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">Gewählt</span>
+                                    </template>
+                                    <template x-if="isAdUsed({{ $ad->id }}) && !wasJustAssigned({{ $ad->id }})">
+                                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-600">Verw.</span>
+                                    </template>
+                                    <template x-if="activeSituationId">
+                                        <span class="rounded-md bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">Wählen</span>
+                                    </template>
                                 </div>
+                                <p class="mt-1 text-[13px] leading-snug text-slate-700"
+                                   :class="open ? 'whitespace-pre-line' : 'line-clamp-2'">{{ $ad->body_text }}</p>
                             </div>
-                            <div class="mb-2 flex items-center gap-2">
-                                <template x-if="wasJustAssigned({{ $ad->id }})">
-                                    <span class="rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white">
-                                        Gewählt
-                                    </span>
-                                </template>
-
-                                <template x-if="isAdUsed({{ $ad->id }}) && !wasJustAssigned({{ $ad->id }})">
-                                    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600">
-                                        Verwendet
-                                    </span>
-                                </template>
-                            </div>
-                            <template x-if="pickerOpen && activeSituationId">
-                                <span class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
-                                    Wählen
-                                </span>
-                            </template>
-                        </div>
-
-                        <div class="whitespace-pre-line text-[17px] leading-8 text-slate-900">
-                            {{ $ad->body_text }}
+                            <button type="button"
+                                    class="mt-0.5 shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-100"
+                                    @click.stop="open = !open">
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"
+                                     viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
                         </div>
                     </article>
                 @endforeach
@@ -734,7 +740,7 @@
     </div>
 
     {{-- DESKTOP FOOTER ONLY --}}
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -765,46 +771,38 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
         {{ $part->section->title }}, {{ strtoupper($part->title) }}
     </div>
 
     {{-- MOBILE ONLY --}}
     <main class="mx-auto max-w-[1650px] px-3 py-3 xl:hidden">
         <section class="space-y-3">
-            <x-exam.instruction-box :text="$part->instruction_text" />
-
-            <div class="sticky top-2 z-20 space-y-2">
-                <div class="rounded-2xl border border-slate-300 bg-white/95 px-4 py-3 shadow backdrop-blur">
+            {{-- Sticky nav: progress + gap number pills --}}
+            <div class="sticky top-2 z-20">
+                <div class="rounded-xl border border-slate-300 bg-white/95 px-3 py-2 shadow backdrop-blur">
                     <div class="flex items-center justify-between gap-3">
-                        <div class="text-sm font-semibold text-slate-700">
+                        <span class="text-sm font-semibold text-slate-700">
                             <span x-text="answeredCount()"></span>/{{ $part->sprachGapQuestions->count() }} beantwortet
-                        </div>
-
-                        <button
-                            type="button"
-                            class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600"
-                            @click="goToNextUnanswered()"
-                        >
-                            Nächste Lücke
+                        </span>
+                        <button type="button"
+                                class="rounded-lg bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white shadow"
+                                @click="goToNextUnanswered()">
+                            Nächste Lücke →
                         </button>
                     </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-300 bg-white/95 px-3 py-3 shadow backdrop-blur">
-                    <div class="mobile-question-nav flex gap-2 overflow-x-auto pb-1">
+                    <div class="mobile-question-nav mt-2 flex gap-1.5 overflow-x-auto pb-1">
                         @foreach($part->sprachGapQuestions->sortBy('sort_order') as $question)
-                            <button
-                                type="button"
-                                class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition"
-                                :class="navigatorButtonClass({{ $question->id }})"
-                                @click="scrollToGap({{ $question->id }})"
-                            >
+                            <button type="button"
+                                    class="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition"
+                                    :class="navigatorButtonClass({{ $question->id }})"
+                                    @click="scrollToGap({{ $question->id }})">
                                 {{ $question->gap_number }}
                             </button>
                         @endforeach
@@ -812,12 +810,13 @@
                 </div>
             </div>
 
-            <article class="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+            {{-- Email text — fixed height, scrollable internally, compact chips --}}
+            <article class="overflow-y-auto rounded-xl border border-slate-300 bg-white p-4 shadow-sm"
+                     style="max-height: 42vh;">
                 @if($passage?->title)
-                    <h3 class="mb-5 text-xl font-bold text-slate-900">{{ $passage->title }}</h3>
+                    <h3 class="mb-3 text-base font-bold text-slate-900">{{ $passage->title }}</h3>
                 @endif
-
-                <div class="text-[22px] leading-[2.4] text-slate-900">
+                <div class="text-[15px] leading-[2.1] text-slate-900">
                     @foreach($templateChunks as $chunkIndex => $chunk)
                         @if($chunkIndex % 2 === 1)
                             @php
@@ -828,20 +827,15 @@
                                 <button
                                     id="gap-{{ $question->id }}"
                                     type="button"
-                                    class="mx-1 inline-flex min-h-[44px] min-w-[86px] scroll-mt-[170px] items-center rounded-xl border-2 px-3 py-1.5 align-middle text-lg font-semibold text-white transition"
+                                    class="mx-0.5 inline-flex min-h-[26px] min-w-[58px] scroll-mt-8 items-center rounded-lg border-2 px-2 py-0.5 align-middle text-xs font-semibold text-white transition"
                                     :class="mobileGapChipClass({{ $question->id }})"
-                                    @click="openGapPicker({{ $question->id }})"
+                                    @click="scrollToGap({{ $question->id }})"
                                 >
-                                    <span class="mr-2 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-[#042640] px-2 text-[20px]">
-                                        {{ $gapNumber }}
-                                    </span>
-                                    <span
-                                        class="max-w-[120px] truncate"
-                                        x-text="selectedLabel({{ $question->id }}) || '…'"
-                                    ></span>
+                                    <span class="mr-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#042640] px-1 text-[10px]">{{ $gapNumber }}</span>
+                                    <span class="max-w-[70px] truncate" x-text="selectedLabel({{ $question->id }}) || '…'"></span>
                                 </button>
                             @else
-                                <span class="mx-1 inline-block rounded-md bg-slate-300 px-3 py-1 align-middle text-sm font-semibold text-slate-700">[{{ $gapNumber }}]</span>
+                                <span class="mx-1 inline-block rounded bg-slate-300 px-1.5 py-0.5 align-middle text-xs font-semibold text-slate-700">[{{ $gapNumber }}]</span>
                             @endif
                         @else
                             <span style="white-space: pre-line;">{{ $chunk }}</span>
@@ -849,6 +843,38 @@
                     @endforeach
                 </div>
             </article>
+
+            {{-- Inline answer panel — no modal, stays visible --}}
+            <div x-show="activeQuestionId"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="rounded-xl border border-indigo-200 bg-[#eceef8] p-3 shadow">
+                    <div class="mb-2 flex items-center justify-between">
+                        <div class="text-sm font-semibold text-slate-500">
+                            Lücke <span x-text="activeGapNumber()" class="font-bold text-slate-800"></span>
+                        </div>
+                        <template x-if="activeQuestionId && choices[activeQuestionId]">
+                            <button type="button"
+                                    class="text-xs font-semibold text-red-500"
+                                    @click="clearActiveGapChoice()">
+                                Auswahl löschen
+                            </button>
+                        </template>
+                    </div>
+                    <div class="space-y-1.5">
+                        <template x-for="option in activeQuestionOptions()" :key="option.id">
+                            <button type="button"
+                                    class="flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[15px] font-semibold text-slate-900 transition"
+                                    :class="mobileOptionButtonClass(option.id)"
+                                    @click="chooseFromPicker(option.id)">
+                                <span x-text="option.option_text"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
         </section>
     </main>
 
@@ -872,7 +898,7 @@
                             @if($question)
                                 <button
                                     type="button"
-                                    class="mx-1 inline-flex min-h-[40px] min-w-[70px] items-center rounded-xl border-2 border-slate-700 bg-slate-700 px-3 py-1 align-middle text-lg font-semibold text-white transition"
+                                    class="mx-1 inline-flex min-h-[40px] min-w-[70px] items-center rounded-xl border-2 border-[#3d5f8a] bg-[#3d5f8a] px-3 py-1 align-middle text-lg font-semibold text-white transition"
                                     :class="gapChipClass({{ $question->id }})"
                                     @click="selectGap({{ $question->id }})"
                                 >
@@ -891,7 +917,7 @@
         </section>
 
         <aside class="w-full xl:w-[610px]">
-            <div class="rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
+            <div class="rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
                 @foreach($part->sprachGapQuestions->sortBy('sort_order') as $question)
                     <article class="mb-1.5 rounded-md border border-slate-200 bg-white/70 px-2.5 py-1.5 transition"
                              :class="questionCardClass({{ $question->id }})"
@@ -902,7 +928,7 @@
                             </div>
                             <div class="grid grid-cols-3 gap-1.5">
                                 @foreach($question->options as $option)
-                                    <label class="grid cursor-pointer grid-cols-[18px_1fr] items-center gap-1 rounded-md px-1.5 py-0.5 text-[14px] hover:bg-indigo-50">
+                                    <label class="grid cursor-pointer grid-cols-[18px_1fr] items-center gap-1 rounded-md px-1.5 py-0.5 text-[14px] hover:bg-[#d9dcff]">
                                         <input
                                             type="radio"
                                             class="h-4 w-4"
@@ -939,7 +965,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
         >
             <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
 
@@ -991,7 +1017,7 @@
     </div>
 
     {{-- DESKTOP FOOTER ONLY --}}
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -1024,12 +1050,13 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">
         {{ $part->section->title }}, {{ strtoupper($part->title) }}
     </div>
 
@@ -1167,12 +1194,12 @@
         </section>
 
         <aside class="w-full xl:w-[610px]">
-            <div class="sticky top-3 rounded-2xl border border-slate-300 bg-white p-3 shadow-xl">
+            <div class="sticky top-3 rounded-2xl border border-slate-300 bg-[#eceef8] p-3 shadow-xl">
                 <div class="space-y-1.5 pr-0.5">
                     @foreach($part->sprachPoolOptions as $option)
                         <div class="flex items-start gap-2" @click="handleOptionClick({{ $option->id }})">
                             <span class="mt-1 text-base font-semibold text-slate-700">{{ $option->option_key }}.</span>
-                            <div class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1 text-[14px] font-semibold text-slate-900 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50"
+                            <div class="w-full rounded-xl border border-indigo-300 bg-[#b5b8ff] px-3 py-1 text-[14px] font-semibold text-slate-900 shadow-sm transition"
                                  :class="optionCardClass({{ (int) $option->id }})"
                                  draggable="true"
                                  @dragstart="dragStart({{ $option->id }}, $event)">
@@ -1203,7 +1230,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="translate-y-0"
             x-transition:leave-end="translate-y-full"
-            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-white px-4 pb-6 pt-3 shadow-2xl"
+            class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-[28px] bg-[#eef1f8] px-4 pb-6 pt-3 shadow-2xl"
         >
             <div class="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-300"></div>
 
@@ -1267,7 +1294,7 @@
     </div>
 
     {{-- DESKTOP FOOTER ONLY --}}
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -1294,13 +1321,14 @@
     <x-exam.header
         :attempt="$attempt"
         :exam="$attempt->exam"
+        :current-part="$part"
         :part-tabs="$partTabs"
         :current-part-id="$part->id"
         :completed-part-ids="$completedPartIds"
         :audio-url="$part->config_json['audio_url'] ?? null"
     />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
 
     <main class="mx-auto max-w-[1220px] px-4 py-4">
         <x-exam.instruction-box :text="$part->instruction_text" />
@@ -1308,7 +1336,7 @@
         <div class="mt-6 overflow-x-auto rounded border border-slate-300 bg-white shadow">
             <table class="w-full min-w-[460px] border-collapse text-base sm:text-xl">
                 <thead>
-                    <tr class="border-l-4 border-l-[#d62828] bg-[#112442] text-left text-white">
+                    <tr class="bg-[#143773] text-left text-white">
                         <th class="w-10 border border-slate-300 px-2 py-2 sm:w-20 sm:px-3"></th>
                         <th class="w-28 border border-slate-300 px-2 py-2 text-sm sm:w-44 sm:px-3 sm:text-base">RICHTIG</th>
                         <th class="w-28 border border-slate-300 px-2 py-2 text-sm sm:w-44 sm:px-3 sm:text-base">FALSCH</th>
@@ -1341,7 +1369,7 @@
         </div>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />
@@ -1392,14 +1420,14 @@
     class="min-h-screen"
     data-exam-scale-root
 >
-    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
+    <x-exam.header :attempt="$attempt" :exam="$attempt->exam" :current-part="$part" :part-tabs="$partTabs" :current-part-id="$part->id" :completed-part-ids="$completedPartIds" />
 
-    <div class="border-b border-l-4 border-slate-700 border-l-[#d62828] bg-[#112442] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
+    <div class="border-b border-slate-600 bg-[#143773] px-4 py-2 text-xl font-bold text-white">{{ $part->section->title }}, {{ strtoupper($part->title) }}</div>
 
     <main class="mx-auto max-w-[1650px] px-4 py-4">
         <x-exam.instruction-box :text="$part->instruction_text" />
 
-        <div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-base font-semibold text-slate-900 sm:px-6 sm:py-4 sm:text-xl">
+        <div class="mt-4 rounded-xl border border-amber-300 bg-[#e8edb1] px-6 py-4 text-xl font-semibold text-slate-900">
             <div>Entscheiden Sie schnell, denn die zur Verfugung stehende Zeit ist begrenzt auf 30 Minuten.</div>
             @if($isB2)
                 <div class="mt-1">Aufgabe A: Bitte um Informationen</div>
@@ -1449,7 +1477,7 @@
                     <div class="flex flex-wrap gap-2">
                         <template x-for="char in specialChars" :key="char">
                             <button type="button"
-                                    class="rounded-md border border-slate-300 bg-white px-3 py-1 text-2xl font-bold text-slate-900 hover:border-indigo-300 hover:bg-indigo-50"
+                                    class="rounded-md border border-slate-300 bg-[#eceef8] px-3 py-1 text-2xl font-bold text-slate-900 hover:border-indigo-400 hover:bg-[#dfe3ff]"
                                     @click="insertChar(char)"
                                     x-text="char"></button>
                         </template>
@@ -1470,7 +1498,7 @@
         </div>
     </main>
 
-    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#112442] px-6 py-2 text-sm text-white xl:block">
+    <footer class="exam-bottom-bar fixed bottom-0 left-0 right-0 hidden bg-[#001332] px-6 py-2 text-sm text-white xl:block">
         <div class="mx-auto flex max-w-[1650px] items-center justify-between">
             <div>TEST USER</div>
             <x-exam.font-controls />

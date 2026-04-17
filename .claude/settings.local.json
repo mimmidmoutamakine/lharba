@@ -18,7 +18,9 @@
       "Bash(grep -v \"^$\")",
       "Bash(grep -n \"sprach_gap_questions\" database/migrations/*.php)",
       "Bash(cat database/migrations/2026_03_0*sprach_gap_options*)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(php *)",
+      "Bash(grep *)"
     ]
   }
 }
